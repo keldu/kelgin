@@ -1,2 +1,2 @@
-# kelgin-graphics
+# kelgin
 
