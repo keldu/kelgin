@@ -14,5 +14,5 @@ struct DaemonConfig {
 	std::vector<ListenAddress> addresses;
 };
 
-Own<Config> loadConfig();
+Own<DaemonConfig> loadConfig();
 }
