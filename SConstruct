@@ -33,7 +33,7 @@ env=Environment(CPPPATH=['#source','#'],
     CXX='c++',
     CPPDEFINES=['GIN_UNIX'],
     CXXFLAGS=['-std=c++17','-g','-Wall','-Wextra'],
-    LIBS=['kelgin'])
+    LIBS=['kelgin','kelgin-window','-ldl'])
 env.__class__.add_source_files = add_kel_source_files
 
 env.sources = []

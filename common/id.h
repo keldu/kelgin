@@ -1,7 +1,9 @@
 #pragma once
 
+#include <cstdint>
+
 namespace gin {
-class RID {
+class ResourceId {
 private:
 	uint32_t id;
 };

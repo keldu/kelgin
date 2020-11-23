@@ -4,12 +4,7 @@
 #include <kelgin/io.h>
 
 namespace gin {
-
-GraphicsService::RemoteClient::RemoteClient(Own<IoStream>&& s):
-	stream{std::move(s)}
-{}
-
-GraphicsService::GraphicsService(AsyncIoContext& async)
+GraphicsService::GraphicsService()
 {}
 
 void GraphicsService::run(AsyncIoContext& async){
