@@ -44,18 +44,12 @@ class RenderScene {
 };
 
 class RenderWorld {
-private:
-	Render* renderer;
 public:
-	RenderWorld(Render&);
-	virtual ~RenderWorld();
+	virtual ~RenderWorld() = default;
 };
 
 class Render {
 protected:
-
-	friend class RenderWorld;
-	void destroyRenderWorld(const RenderWorld&);
 public:
 	virtual ~Render() = default;
 
@@ -63,9 +57,14 @@ public:
 	//virtual void destroyRenderObject(const RenderObjectId&) = 0;
 
 	virtual Own<RenderWorld> createWorld() = 0;
+	// virtual void destroyRenderWorld(const RenderWorld&) = 0;
 };
 }
 
+/*
+* Don't implement this here
+* This is meant for plugins
+*/
 extern "C" {
 gin::Render* createRenderer();
 void destroyRenderer(gin::Render* render);

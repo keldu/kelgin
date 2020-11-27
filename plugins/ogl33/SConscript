@@ -1,0 +1,19 @@
+#!/bin/false
+
+import os
+import os.path
+import glob
+
+
+Import('plugins_env')
+
+ogl33_env = plugins_env.Clone()
+
+dir_path = Dir('.').abspath
+
+ogl33_env.sources = sorted(glob.glob(dir_path + "/*.cpp"))
+ogl33_env.headers = sorted(glob.glob(dir_path + "/*.h"))
+
+ogl33_env.objects = []
+ogl33_env.add_source_files(ogl33_env.objects, ogl33_env.sources, shared=True)
+plugins_env.plugins += ogl33_env.SharedLibrary('#bin/plugins/ogl33', [ogl33_env.objects])

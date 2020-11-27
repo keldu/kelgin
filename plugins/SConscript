@@ -6,5 +6,16 @@ import glob
 
 
 Import('env')
+plugins_env = env.Clone()
+Export('plugins_env')
 
 dir_path = Dir('.').abspath
+plugins_env.plugins = []
+
+for entry in os.scandir(dir_path):
+	if (os.path.isdir(entry)):
+		scons_file = entry.path + "/SConscript";
+		if(os.path.exists(scons_file)):
+			SConscript(scons_file);
+
+env.Alias('plugins', plugins_env.plugins)

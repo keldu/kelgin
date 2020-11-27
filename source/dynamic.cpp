@@ -1,5 +1,7 @@
 #include "dynamic.h"
 
+#include <kelgin/common.h>
+
 #include <functional>
 #include <map>
 
@@ -39,17 +41,20 @@ public:
 };
 
 DynamicLibrary::DynamicLibrary(void* handle):
-	impl{gin::heap<Impl>(handle)}
+	impl{gin::heap<DynamicLibrary::Impl>(handle)}
 {}
 
-DynamicLibrary::~DynamicLibrary(){}
+DynamicLibrary::~DynamicLibrary() = default;
+
+DynamicLibrary::DynamicLibrary(DynamicLibrary&&) = default;
+DynamicLibrary& DynamicLibrary::operator=(DynamicLibrary&&) = default;
 
 void* DynamicLibrary::symbol(const std::string& sym){
 	assert(impl);
-	impl->symbol(sym);
+	return impl->symbol(sym);
 }
 
-ErrorOr<DynamicLibrary> loadDynamicLibrary(const std::string& path){
+ErrorOr<DynamicLibrary> loadDynamicLibrary(const std::filesystem::path& path){
 	void* handle = dlopen(path.c_str(), RTLD_LAZY);
 	if(!handle){
 		return criticalError("Couldn't open library");

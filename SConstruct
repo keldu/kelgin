@@ -33,7 +33,7 @@ env=Environment(CPPPATH=['#source','#'],
     CXX='c++',
     CPPDEFINES=['GIN_UNIX'],
     CXXFLAGS=['-std=c++17','-g','-Wall','-Wextra'],
-    LIBS=['kelgin','kelgin-window','-ldl'])
+    LIBS=['kelgin','-ldl'])
 env.__class__.add_source_files = add_kel_source_files
 
 env.sources = []
@@ -47,6 +47,7 @@ env.daemon_objects = []
 Export('env')
 SConscript('source/SConscript')
 SConscript('daemon/SConscript')
+SConscript('plugins/SConscript')
 
 # Library build
 
@@ -90,4 +91,5 @@ def format_iter(env,files):
 format_iter(env,env.sources + env.headers)
 
 env.Alias('format', env.format_actions)
+env.Alias('all', ['library','plugins','daemon'])
 # env.Alias('test', env.test_program)
