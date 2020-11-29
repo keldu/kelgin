@@ -49,7 +49,7 @@ public:
 	*
 	* @param name search for the plugin by using the filename part without the extension
 	*/
-	Render* getRenderer(const std::string& name)
+	Render* getRenderer(const std::string& name);
 };
 
 RenderPlugins loadAllRenderPluginsIn(const std::filesystem::path& dir);

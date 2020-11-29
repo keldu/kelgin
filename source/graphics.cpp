@@ -25,6 +25,14 @@ RenderPlugins::RenderPlugins(std::filesystem::path&& fp, std::map<std::string, H
 	render_plugins{std::move(p)}
 {}
 
+Render* RenderPlugins::getRenderer(const std::string& name){
+	auto find = render_plugins.find(name);
+	if(find != render_plugins.end()){
+		return find->second.render;
+	}
+	return nullptr;
+}
+
 RenderPlugins loadAllRenderPluginsIn(const std::filesystem::path& dir){
 	if(!std::filesystem::is_directory(dir)){
 		return RenderPlugins{};
@@ -56,6 +64,11 @@ RenderPlugins loadAllRenderPluginsIn(const std::filesystem::path& dir){
 
 		std::string path_string = path.filename().string();
 		std::string_view ps_view{path_string};
+		auto ps_dot = ps_view.find('.');
+		if(ps_dot != ps_view.npos){
+			ps_view.remove_suffix(ps_view.size() - ps_dot);
+		}
+		path_string = ps_view;
 		plugins.insert(std::make_pair(std::move(path_string), RenderPlugins::Handles{std::move(lib.value()), *renderer, std::move(destroy_render)}));
 	}
 
@@ -67,7 +80,7 @@ Graphics::Graphics(RenderPlugins&& rp):
 {}
 
 Render* Graphics::getRenderer(const std::string& name){
-	return nullptr;
+	return render_plugins.getRenderer(name);
 }
 
 GraphicsService::GraphicsService(Graphics&& gr):graphics{std::move(gr)}{}

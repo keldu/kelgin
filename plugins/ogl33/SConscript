@@ -9,6 +9,8 @@ Import('plugins_env')
 
 ogl33_env = plugins_env.Clone()
 
+# /// @todo Append gl etc
+
 dir_path = Dir('.').abspath
 
 ogl33_env.sources = sorted(glob.glob(dir_path + "/*.cpp"))
