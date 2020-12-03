@@ -12,32 +12,8 @@ using RenderObjectId = ResourceId;
 using RenderWorldId = ResourceId;
 using RenderSceneId = ResourceId;
 using RenderTargetId = ResourceId;
-
-class MeshRef {
-private:
-	MeshId mesh_id;
-public:
-};
-
-class TextureRef {
-private:
-	TextureId tex_id;
-public:
-};
-
-class RenderObjectRef {
-private:
-	RenderObjectId obj_id;
-public:
-};
-
-class RenderSceneRef {
-public:
-};
-
-class RenderWorldRef {
-public:
-};
+using RenderTextureId = RenderTargetId;
+using RenderWindowId = RenderTargetId;
 
 class Render;
 class RenderScene {
@@ -60,7 +36,7 @@ public:
 	virtual Own<RenderWorld> createWorld() = 0;
 	// virtual void destroyRenderWorld(const RenderWorld&) = 0;
 
-	virtual RenderWindowId
+	virtual RenderWindowId createWindow() = 0;
 };
 }
 
@@ -69,6 +45,6 @@ public:
 * This is meant for plugins
 */
 extern "C" {
-gin::Render* createRenderer();
+gin::Render* createRenderer(gin::AsyncIoProvider& io_provider);
 void destroyRenderer(gin::Render* render);
 }

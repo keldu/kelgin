@@ -36,6 +36,10 @@ Own<RenderWorld> Ogl33Render::createWorld(){
 	return world;
 }
 
+RenderWindowId Ogl33Render::createWindow() {
+	return 0;
+}
+
 void Ogl33Render::destroyedRenderWorld(Ogl33RenderWorld& rw){
 	render_worlds.erase(&rw);
 }
@@ -52,9 +56,13 @@ Ogl33Render::~Ogl33Render(){
 }
 }
 
-extern "C" gin::Render* createRenderer(){
+extern "C" gin::Render* createRenderer(gin::AsyncIoProvider& io_provider){
 	std::cout<<"Creating ogl33 plugin"<<std::endl;
-	return new gin::Ogl33Render;
+	gin::Own<GlContext> context = gin::createGlContext(io_provider, GlSettings{});
+	if(!context){
+		return nullptr;
+	}
+	return new gin::Ogl33Render(std::move(context));
 }
 
 extern "C" void destroyRenderer(gin::Render* render){

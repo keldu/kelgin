@@ -133,6 +133,8 @@ struct Ogl33RenderTargetStorage {
 
 	size_t max_free_id = 0;
 	std::priority_queue<RenderTargetId, std::vector<RenderTargetId>, std::greater<RenderTargetId>> free_ids;
+
+	
 };
 
 class Ogl33Render final : public Render {
@@ -152,6 +154,7 @@ public:
 	~Ogl33Render();
 
 	Own<RenderWorld> createWorld() override;
+	RenderWindowId createWindow() override;
 
 	void destroyedRenderWorld(Ogl33RenderWorld& rw);
 };
