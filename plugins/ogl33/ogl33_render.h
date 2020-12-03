@@ -9,6 +9,9 @@
 
 #include "ogl33_bindings.h"
 
+#include <kelgin/window/gl/gl_context.h>
+#include <kelgin/common.h>
+
 namespace gin {
 /**
 * Helper parent
@@ -37,11 +40,22 @@ public:
 };
 
 class Ogl33Program final : public Ogl33Resource {
-private:
-	GLuint rid;
 public:
 	using Ogl33Resource::Ogl33Resource;
 	~Ogl33Program();
+};
+
+class Ogl33Window {
+private:
+	Own<GlWindow> window;
+public:
+	Ogl33Window(GLuint, Own<GlWindow>&&);
+};
+
+class Ogl33RenderTexture {
+private:
+public:
+	~Ogl33RenderTexture();
 };
 
 /// @todo maybe do this with deque?
@@ -87,6 +101,7 @@ public:
 			}
 		}else{
 			resources[id] = T{0};
+			free_ids.push(id);
 		}
 	}
 
@@ -112,14 +127,28 @@ public:
 	void destroyedRender();
 };
 
+struct Ogl33RenderTargetStorage {
+	std::map<RenderTextureId, Ogl33RenderTexture> render_textures;
+	std::map<RenderWindowId, Ogl33Window> windows;
+
+	size_t max_free_id = 0;
+	std::priority_queue<RenderTargetId, std::vector<RenderTargetId>, std::greater<RenderTargetId>> free_ids;
+};
+
 class Ogl33Render final : public Render {
 private:
+	Own<GlContext> context;
+
 	Ogl33RenderResourceVector<MeshId, Ogl33Mesh> meshes;
 	Ogl33RenderResourceVector<TextureId, Ogl33Texture> textures;
 	Ogl33RenderResourceVector<ProgramId, Ogl33Program> programs;
 
+	std::map<RenderTextureId, Ogl33RenderTexture> render_textures;
+	std::map<RenderWindowId, Ogl33Window> windows;
+
 	std::set<Ogl33RenderWorld*> render_worlds;
 public:
+	Ogl33Render(Own<GlContext>&&);
 	~Ogl33Render();
 
 	Own<RenderWorld> createWorld() override;

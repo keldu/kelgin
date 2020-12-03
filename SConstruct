@@ -44,9 +44,14 @@ env.daemon_sources = []
 env.daemon_headers = []
 env.daemon_objects = []
 
+env.example_sources = []
+env.example_headers = []
+env.example_objects = []
+
 Export('env')
 SConscript('source/SConscript')
 SConscript('daemon/SConscript')
+SConscript('example/SConscript')
 SConscript('plugins/SConscript')
 
 # Library build
@@ -77,6 +82,14 @@ env.daemon_bin = daemon_env.Program('#bin/kelgin-graphicsd', [env.daemon_objects
 
 env.Alias('daemon', env.daemon_bin)
 
+# Examples
+example_env = env.Clone()
+example_env.Append(LIBS=['pthread'])
+example_env.add_source_files(env.example_objects, env.example_sources)
+env.example_setup_bin = example_env.Program('#bin/example_setup', [env.example_objects, env.library_shared]);
+
+env.Alias('example_setup', env.example_setup_bin)
+
 # Tests
 # SConscript('test/SConscript')
 
@@ -88,8 +101,8 @@ def format_iter(env,files):
         env.format_actions.append(env.AlwaysBuild(env.ClangFormat(target=f+"-clang-format",source=f)))
     pass
 
-format_iter(env,env.sources + env.headers)
+format_iter(env,env.sources + env.headers + env.daemon_sources + env.daemon_headers + env.example_sources + env.example_headers)
 
 env.Alias('format', env.format_actions)
-env.Alias('all', ['library','plugins','daemon'])
+env.Alias('all', ['library','plugins','daemon','example_setup'])
 # env.Alias('test', env.test_program)

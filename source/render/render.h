@@ -11,6 +11,7 @@ using ProgramId = ResourceId;
 using RenderObjectId = ResourceId;
 using RenderWorldId = ResourceId;
 using RenderSceneId = ResourceId;
+using RenderTargetId = ResourceId;
 
 class MeshRef {
 private:
@@ -58,6 +59,8 @@ public:
 
 	virtual Own<RenderWorld> createWorld() = 0;
 	// virtual void destroyRenderWorld(const RenderWorld&) = 0;
+
+	virtual RenderWindowId
 };
 }
 

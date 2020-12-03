@@ -40,6 +40,10 @@ void Ogl33Render::destroyedRenderWorld(Ogl33RenderWorld& rw){
 	render_worlds.erase(&rw);
 }
 
+Ogl33Render::Ogl33Render(Own<GlContext>&& ctx):
+	context{std::move(ctx)}
+{}
+
 Ogl33Render::~Ogl33Render(){
 	assert(render_worlds.empty());
 	for(auto& world : render_worlds){

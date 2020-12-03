@@ -5,6 +5,7 @@
 
 #include <cassert>
 #include <iostream>
+#include <algorithm>
 
 namespace gin {
 RenderPlugins::Handles::Handles(DynamicLibrary&& dl, Render& r, std::function<void(Render*)>&& dr):
@@ -68,6 +69,12 @@ RenderPlugins loadAllRenderPluginsIn(const std::filesystem::path& dir){
 		if(ps_dot != ps_view.npos){
 			ps_view.remove_suffix(ps_view.size() - ps_dot);
 		}
+
+		auto lib_view = ps_view.substr(0,3);
+		if(lib_view == "lib"){
+			ps_view.remove_prefix(std::min(static_cast<size_t>(3), ps_view.size()));
+		}
+
 		path_string = ps_view;
 		plugins.insert(std::make_pair(std::move(path_string), RenderPlugins::Handles{std::move(lib.value()), *renderer, std::move(destroy_render)}));
 	}
