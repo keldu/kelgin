@@ -3,8 +3,5 @@
 #include <cstdint>
 
 namespace gin {
-class ResourceId {
-private:
-	uint32_t id;
-};
+using ResourceId = uint32_t;
 }

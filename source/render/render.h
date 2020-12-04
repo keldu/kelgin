@@ -3,6 +3,7 @@
 #include "common/id.h"
 
 #include <kelgin/async.h>
+#include <kelgin/io.h>
 
 namespace gin {
 using MeshId = ResourceId;

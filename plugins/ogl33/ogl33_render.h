@@ -5,6 +5,7 @@
 #include <queue>
 #include <set>
 #include <vector>
+#include <map>
 #include <cassert>
 
 #include "ogl33_bindings.h"
@@ -45,14 +46,20 @@ public:
 	~Ogl33Program();
 };
 
-class Ogl33Window {
+class Ogl33RenderTarget {
+protected:
+	~Ogl33RenderTarget() = default;
+public:
+};
+
+class Ogl33Window final : public Ogl33RenderTarget {
 private:
 	Own<GlWindow> window;
 public:
 	Ogl33Window(GLuint, Own<GlWindow>&&);
 };
 
-class Ogl33RenderTexture {
+class Ogl33RenderTexture final : public Ogl33RenderTarget {
 private:
 public:
 	~Ogl33RenderTexture();
@@ -127,14 +134,24 @@ public:
 	void destroyedRender();
 };
 
-struct Ogl33RenderTargetStorage {
-	std::map<RenderTextureId, Ogl33RenderTexture> render_textures;
-	std::map<RenderWindowId, Ogl33Window> windows;
+/// @todo this storage kinda feels hacky
+/// An idea would be to use evenly numbered IDs for RenderWindows
+/// and odd numbered IDs for RenderTextures
+class Ogl33RenderTargetStorage {
+private:
+	std::map<RenderTargetId, Ogl33RenderTexture> render_textures;
+	std::map<RenderTargetId, Ogl33Window> windows;
 
-	size_t max_free_id = 0;
+	RenderTargetId max_free_id = 0;
 	std::priority_queue<RenderTargetId, std::vector<RenderTargetId>, std::greater<RenderTargetId>> free_ids;
+public:
+	RenderTextureId insert(Ogl33RenderTexture&& render_texture);
+	RenderWindowId insert(Ogl33Window&& render_window);
+	void erase(const RenderTargetId& id);
 
-	
+	bool exists(const RenderTargetId& id) const;
+	Ogl33RenderTarget* operator[](const RenderTargetId& id);
+	const Ogl33RenderTarget* operator[](const RenderTargetId& id) const;
 };
 
 class Ogl33Render final : public Render {
@@ -145,8 +162,7 @@ private:
 	Ogl33RenderResourceVector<TextureId, Ogl33Texture> textures;
 	Ogl33RenderResourceVector<ProgramId, Ogl33Program> programs;
 
-	std::map<RenderTextureId, Ogl33RenderTexture> render_textures;
-	std::map<RenderWindowId, Ogl33Window> windows;
+	Ogl33RenderTargetStorage render_targets;
 
 	std::set<Ogl33RenderWorld*> render_worlds;
 public:

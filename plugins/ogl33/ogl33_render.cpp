@@ -28,6 +28,86 @@ void Ogl33RenderWorld::destroyedRender(){
 	renderer = nullptr;
 }
 
+RenderTextureId Ogl33RenderTargetStorage::insert(Ogl33RenderTexture&& rt){
+	RenderTargetId id;
+	if(free_ids.empty()){
+		id = max_free_id;
+		++max_free_id;
+	}else{
+		id = free_ids.top();
+		free_ids.pop();
+	}
+
+	render_textures.insert(std::make_pair(id, std::move(rt)));
+	return static_cast<RenderTextureId>(id);
+}
+
+RenderWindowId Ogl33RenderTargetStorage::insert(Ogl33Window&& rw){
+	RenderTargetId id;
+	if(free_ids.empty()){
+		id = max_free_id;
+		++max_free_id;
+	}else{
+		id = free_ids.top();
+		free_ids.pop();
+	}
+
+	windows.insert(std::make_pair(id, std::move(rw)));
+	return static_cast<RenderWindowId>(id);
+}
+
+void Ogl33RenderTargetStorage::erase(const RenderTargetId& id){
+	auto rt_find = render_textures.find(id);
+	if(rt_find != render_textures.end()){
+		render_textures.erase(rt_find);
+		return;
+	}
+
+	auto rw_find = windows.find(id);
+	if(rw_find != windows.end()){
+		windows.erase(rw_find);
+	}
+}
+
+bool Ogl33RenderTargetStorage::exists(const RenderTargetId& id) const {
+	auto rt_find = render_textures.find(id);
+	if(rt_find != render_textures.end()){
+		return true;
+	}
+
+	return windows.find(id) != windows.end();
+}
+
+Ogl33RenderTarget* Ogl33RenderTargetStorage::operator[](const RenderTargetId& id){
+	auto rt_find = render_textures.find(id);
+	if(rt_find != render_textures.end()){
+		return &rt_find->second;
+	}
+
+	auto rw_find = windows.find(id);
+	if(rw_find != windows.end()){
+		return &rw_find->second;
+	}
+
+	assert(false);
+	return nullptr;
+}
+
+const Ogl33RenderTarget* Ogl33RenderTargetStorage::operator[](const RenderTargetId& id)const{
+	auto rt_find = render_textures.find(id);
+	if(rt_find != render_textures.end()){
+		return &rt_find->second;
+	}
+
+	auto rw_find = windows.find(id);
+	if(rw_find != windows.end()){
+		return &rw_find->second;
+	}
+
+	assert(false);
+	return nullptr;
+}
+
 Own<RenderWorld> Ogl33Render::createWorld(){
 	Own<Ogl33RenderWorld> world = heap<Ogl33RenderWorld>(*this);
 
@@ -57,11 +137,12 @@ Ogl33Render::~Ogl33Render(){
 }
 
 extern "C" gin::Render* createRenderer(gin::AsyncIoProvider& io_provider){
-	std::cout<<"Creating ogl33 plugin"<<std::endl;
-	gin::Own<GlContext> context = gin::createGlContext(io_provider, GlSettings{});
+	gin::Own<gin::GlContext> context = gin::createGlContext(io_provider, gin::GlSettings{});
 	if(!context){
 		return nullptr;
 	}
+
+	std::cout<<"Creating ogl33 plugin"<<std::endl;
 	return new gin::Ogl33Render(std::move(context));
 }
 
@@ -69,6 +150,7 @@ extern "C" void destroyRenderer(gin::Render* render){
 	if(!render){
 		return;
 	}
+
 	std::cout<<"Destroying ogl33 plugin"<<std::endl;
 	delete render;
 }
