@@ -10,7 +10,7 @@ Import('plugins_env')
 ogl33_env = plugins_env.Clone()
 
 # /// @todo Append gl etc
-ogl33_env.Append(LIBS=['kelgin','kelgin-window'])
+ogl33_env.Append(LIBS=['kelgin-window', 'kelgin'])
 
 dir_path = Dir('.').abspath
 
