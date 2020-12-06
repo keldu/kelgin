@@ -13,7 +13,7 @@ int main() {
 		.detach([](const Error &error) { return error; });
 
 	Graphics graphics{loadAllRenderPluginsIn("bin/plugins/")};
-	Render *render = graphics.getRenderer("ogl33");
+	Render *render = graphics.getRenderer(*async.io, "ogl33");
 	if (!render) {
 		std::cerr << "No ogl33 renderer present" << std::endl;
 		return -1;
@@ -23,7 +23,10 @@ int main() {
 	auto render_world = render->createWorld();
 
 	//
-	// render->createWindow();
+	RenderWindowId win_id = render->createWindow();
+
+	render->setWindowVisibility(win_id, true);
+	render->flush();
 
 	while (running) {
 		async.wait_scope.wait(std::chrono::seconds{1});

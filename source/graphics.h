@@ -19,16 +19,15 @@ namespace gin {
 */
 class RenderPlugins {
 public:
-	struct Handles {
+	struct Plugin {
 	public:
-		Handles(DynamicLibrary&&, Render&, std::function<void(Render*)>&&);
-		~Handles();
+		Plugin(DynamicLibrary&&, std::function<Render*(AsyncIoProvider&)>&&, std::function<void(Render*)>&&);
 
-		Handles(Handles&&) = default;
-		Handles& operator=(Handles&&) = default;
+		Plugin(Plugin&&) = default;
+		Plugin& operator=(Plugin&&) = default;
 
 		DynamicLibrary handle;
-		Render* render;
+		std::function<Render*(AsyncIoProvider&)> create_render;
 		std::function<void(Render*)> destroy_render;
 	};
 private:
@@ -37,11 +36,13 @@ private:
 	/**
 	* The key part uses the plugin name
 	*/
-	std::map<std::string, Handles> render_plugins; 
+	std::map<std::string, RenderPlugins::Plugin> render_plugins;
 public:
 	RenderPlugins() = default;
-	RenderPlugins(std::filesystem::path&&,std::map<std::string, Handles>&&);
+	RenderPlugins(std::filesystem::path&&,std::map<std::string, RenderPlugins::Plugin>&&);
 
+	RenderPlugins(RenderPlugins&&) = default;
+	RenderPlugins& operator=(RenderPlugins&&) = default;
 	/**
 	* Returns a renderer if it already exists. If it is not loaded yet
 	* it will try to find the plugin within the directory.
@@ -49,7 +50,7 @@ public:
 	*
 	* @param name search for the plugin by using the filename part without the extension
 	*/
-	Render* getRenderer(const std::string& name);
+	Plugin* getHandle(const std::string& name);
 };
 
 RenderPlugins loadAllRenderPluginsIn(const std::filesystem::path& dir);
@@ -57,17 +58,22 @@ RenderPlugins loadAllRenderPluginsIn(const std::filesystem::path& dir);
 class Graphics {
 private:
 	RenderPlugins render_plugins;
+	std::map<std::string, std::pair<RenderPlugins::Plugin*, Render*>> renderers;
 public:
 	Graphics(RenderPlugins&& rp);
+	~Graphics();
 
+	Graphics(Graphics&&) = default;
+	Graphics& operator=(Graphics&&) = default;
 	/**
 	* Returns a renderer if it already exists. If it is not loaded yet
 	* it will try to find the plugin within the parameters provided to RenderPlugins.
 	* If this plugin is not found, the return value is `nullptr`
 	*
+	* @param provider This is a wrapper for listening to outside events
 	* @param name search for the plugin by using the filename part without the extension
 	*/
-	Render* getRenderer(const std::string& name);
+	Render* getRenderer(AsyncIoProvider& provider, const std::string& name);
 };
 
 class GraphicsService final : public Service {

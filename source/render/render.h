@@ -24,6 +24,9 @@ class RenderScene {
 class RenderWorld {
 public:
 	virtual ~RenderWorld() = default;
+
+	// virtual RenderObjectId createObject() = 0;
+	// virtual void destroyObject(const RenderObjectId&) = 0;
 };
 
 class Render {
@@ -38,6 +41,12 @@ public:
 	// virtual void destroyRenderWorld(const RenderWorld&) = 0;
 
 	virtual RenderWindowId createWindow() = 0;
+	virtual void destroyWindow(const RenderWindowId& id) = 0;
+
+	virtual void setWindowVisibility(const RenderWindowId& id, bool show) = 0;
+
+	virtual void step() = 0;
+	virtual void flush() = 0;
 };
 }
 

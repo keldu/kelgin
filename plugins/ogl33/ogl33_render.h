@@ -56,7 +56,10 @@ class Ogl33Window final : public Ogl33RenderTarget {
 private:
 	Own<GlWindow> window;
 public:
-	Ogl33Window(GLuint, Own<GlWindow>&&);
+	Ogl33Window(Own<GlWindow>&&);
+
+	void show();
+	void hide();
 };
 
 class Ogl33RenderTexture final : public Ogl33RenderTarget {
@@ -152,6 +155,9 @@ public:
 	bool exists(const RenderTargetId& id) const;
 	Ogl33RenderTarget* operator[](const RenderTargetId& id);
 	const Ogl33RenderTarget* operator[](const RenderTargetId& id) const;
+
+	Ogl33Window* getWindow(const RenderWindowId&);
+	Ogl33RenderTexture* getRenderTexture(const RenderTextureId&);
 };
 
 class Ogl33Render final : public Render {
@@ -170,8 +176,14 @@ public:
 	~Ogl33Render();
 
 	Own<RenderWorld> createWorld() override;
+
 	RenderWindowId createWindow() override;
+	void destroyWindow(const RenderWindowId& id) override;
+
+	void setWindowVisibility(const RenderWindowId& id, bool show) override;
 
 	void destroyedRenderWorld(Ogl33RenderWorld& rw);
+
+	void flush() override;
 };
 }

@@ -12,6 +12,24 @@ GLuint Ogl33Resource::id() const {
 	return rid;
 }
 
+Ogl33Window::Ogl33Window(Own<GlWindow>&& win):
+	window{std::move(win)}
+{}
+
+void Ogl33Window::show(){
+	if(window){
+		window->bind();
+		window->show();
+	}
+}
+
+void Ogl33Window::hide(){
+	if(window){
+		window->bind();
+		window->hide();
+	}
+}
+
 Ogl33RenderWorld::Ogl33RenderWorld(Ogl33Render& render):
 	renderer{&render}
 {}
@@ -108,6 +126,24 @@ const Ogl33RenderTarget* Ogl33RenderTargetStorage::operator[](const RenderTarget
 	return nullptr;
 }
 
+Ogl33Window* Ogl33RenderTargetStorage::getWindow(const RenderWindowId& id){
+	auto find = windows.find(static_cast<RenderTargetId>(id));
+	if(find != windows.end()){
+		return &find->second;
+	}
+
+	return nullptr;
+}
+
+Ogl33RenderTexture* Ogl33RenderTargetStorage::getRenderTexture(const RenderTextureId& id){
+	auto find = render_textures.find(static_cast<RenderTextureId>(id));
+	if(find != render_textures.end()){
+		return &find->second;
+	}
+
+	return nullptr;
+}
+
 Own<RenderWorld> Ogl33Render::createWorld(){
 	Own<Ogl33RenderWorld> world = heap<Ogl33RenderWorld>(*this);
 
@@ -117,7 +153,29 @@ Own<RenderWorld> Ogl33Render::createWorld(){
 }
 
 RenderWindowId Ogl33Render::createWindow() {
-	return 0;
+	auto gl_win = context->createWindow(VideoMode{500,100}, "Kelgin Example");
+	if(!gl_win){
+		return 0;
+	}
+
+	return render_targets.insert(Ogl33Window{std::move(gl_win)});
+}
+
+void Ogl33Render::destroyWindow(const RenderWindowId& id){
+	render_targets.erase(static_cast<RenderTargetId>(id));
+}
+
+void Ogl33Render::setWindowVisibility(const RenderWindowId& id, bool show){
+	Ogl33Window* window = render_targets.getWindow(id);
+	if(!window){
+		return;
+	}
+
+	if(show){
+		window->show();
+	}else{
+		window->hide();
+	}
 }
 
 void Ogl33Render::destroyedRenderWorld(Ogl33RenderWorld& rw){
@@ -132,6 +190,12 @@ Ogl33Render::~Ogl33Render(){
 	assert(render_worlds.empty());
 	for(auto& world : render_worlds){
 		world->destroyedRender();
+	}
+}
+
+void Ogl33Render::flush(){
+	if(context){
+		context->flush();
 	}
 }
 }

@@ -8,28 +8,22 @@
 #include <algorithm>
 
 namespace gin {
-RenderPlugins::Handles::Handles(DynamicLibrary&& dl, Render& r, std::function<void(Render*)>&& dr):
+RenderPlugins::Plugin::Plugin(DynamicLibrary&& dl, std::function<Render*(AsyncIoProvider&)>&& cr, std::function<void(Render*)>&& dr):
 	handle{std::move(dl)},
-	render{&r},
+	create_render{std::move(cr)},
 	destroy_render{std::move(dr)}
 {
 }
 
-RenderPlugins::Handles::~Handles(){
-	if(destroy_render){
-		destroy_render(render);
-	}
-}
-
-RenderPlugins::RenderPlugins(std::filesystem::path&& fp, std::map<std::string, Handles>&& p):
+RenderPlugins::RenderPlugins(std::filesystem::path&& fp, std::map<std::string, RenderPlugins::Plugin>&& p):
 	directory{std::move(fp)},
 	render_plugins{std::move(p)}
 {}
 
-Render* RenderPlugins::getRenderer(const std::string& name){
+RenderPlugins::Plugin* RenderPlugins::getHandle(const std::string& name){
 	auto find = render_plugins.find(name);
 	if(find != render_plugins.end()){
-		return find->second.render;
+		return &find->second;
 	}
 	return nullptr;
 }
@@ -39,7 +33,7 @@ RenderPlugins loadAllRenderPluginsIn(const std::filesystem::path& dir){
 		return RenderPlugins{};
 	}
 
-	std::map<std::string, RenderPlugins::Handles> plugins;
+	std::map<std::string, RenderPlugins::Plugin> plugins;
 
 	for(auto& file: std::filesystem::directory_iterator(dir)){
 		std::filesystem::path path = file.path();
@@ -48,12 +42,9 @@ RenderPlugins loadAllRenderPluginsIn(const std::filesystem::path& dir){
 			continue;
 		}
 
-		Render*(*create_render)() = reinterpret_cast<Render*(*)()>(lib.value().symbol("createRenderer"));
+		std::function<Render*(AsyncIoProvider&)> create_render = reinterpret_cast<Render*(*)(AsyncIoProvider&)>(lib.value().symbol("createRenderer"));
+		assert(create_render);
 		if(!create_render){
-			continue;
-		}
-		Render* renderer = create_render();
-		if(!renderer){
 			continue;
 		}
 
@@ -76,7 +67,7 @@ RenderPlugins loadAllRenderPluginsIn(const std::filesystem::path& dir){
 		}
 
 		path_string = ps_view;
-		plugins.insert(std::make_pair(std::move(path_string), RenderPlugins::Handles{std::move(lib.value()), *renderer, std::move(destroy_render)}));
+		plugins.insert(std::make_pair(std::move(path_string), RenderPlugins::Plugin{std::move(lib.value()), std::move(create_render), std::move(destroy_render)}));
 	}
 
 	return RenderPlugins{std::filesystem::path{dir}, std::move(plugins)};
@@ -86,8 +77,32 @@ Graphics::Graphics(RenderPlugins&& rp):
 	render_plugins{std::move(rp)}
 {}
 
-Render* Graphics::getRenderer(const std::string& name){
-	return render_plugins.getRenderer(name);
+Graphics::~Graphics(){
+	for(auto iter = renderers.begin(); iter != renderers.end(); iter = renderers.erase(iter)){
+		iter->second.first->destroy_render(iter->second.second);
+	}
+}
+
+Render* Graphics::getRenderer(AsyncIoProvider& provider, const std::string& name){
+	auto r_find = renderers.find(name);
+	if(r_find != renderers.end()){
+		return r_find->second.second;
+	}
+
+	auto handle = render_plugins.getHandle(name);
+	if(!handle){
+		return nullptr;
+	}
+
+	assert(handle->create_render && handle->destroy_render);
+	Render* render = handle->create_render(provider);
+	if(!render){
+		return nullptr;
+	}
+
+	renderers.insert(std::make_pair(name, std::make_pair(handle,render)));
+
+	return render;
 }
 
 GraphicsService::GraphicsService(Graphics&& gr):graphics{std::move(gr)}{}
