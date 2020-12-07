@@ -21,12 +21,25 @@ class RenderScene {
 
 };
 
+class MeshData {
+public:
+	std::vector<float> meshes, uvs;
+	std::vector<int> indices;
+};
+
+class Image {
+public:
+	size_t width, height;
+	std::vector<float> pixels;
+	uint8_t channels;
+};
+
 class RenderWorld {
 public:
 	virtual ~RenderWorld() = default;
 
-	// virtual RenderObjectId createObject() = 0;
-	// virtual void destroyObject(const RenderObjectId&) = 0;
+	virtual RenderObjectId createObject(const MeshId&, const TextureId&) = 0;
+	virtual void destroyObject(const RenderObjectId&) = 0;
 };
 
 class Render {
@@ -34,8 +47,11 @@ protected:
 public:
 	virtual ~Render() = default;
 
-	//virtual RenderObjectId createRenderObject(const RenderWorldId&, const MeshId&, const TextureId&) = 0;
-	//virtual void destroyRenderObject(const RenderObjectId&) = 0;
+	virtual MeshId createMesh(const MeshData&) = 0;
+	virtual void destroyMesh(const MeshId&) = 0;
+
+	virtual TextureId createTexture(const Image&) = 0;
+	virtual void destroyTexture(const TextureId&) = 0;
 
 	virtual Own<RenderWorld> createWorld() = 0;
 	// virtual void destroyRenderWorld(const RenderWorld&) = 0;

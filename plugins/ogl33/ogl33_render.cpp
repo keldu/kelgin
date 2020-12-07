@@ -4,12 +4,13 @@
 #include <cassert>
 
 namespace gin {
-Ogl33Resource::Ogl33Resource(GLuint rid):
-	rid{rid}
+
+Ogl33Mesh::Ogl33Mesh(const std::array<GLuint, 3>&& i):
+	ids{std::move(i)}
 {}
 
-GLuint Ogl33Resource::id() const {
-	return rid;
+Ogl33Mesh::~Ogl33Mesh(){
+	glDeleteBuffers(3, &ids[0]);
 }
 
 Ogl33Window::Ogl33Window(Own<GlWindow>&& win):
@@ -144,6 +145,43 @@ Ogl33RenderTexture* Ogl33RenderTargetStorage::getRenderTexture(const RenderTextu
 	return nullptr;
 }
 
+MeshId Ogl33Render::createMesh(const MeshData& data){
+	std::array<GLuint,3> ids;
+
+	/// @todo ensure that the current render context is bound
+
+	glGenBuffers(3, &ids[0]);
+
+	glBindBuffer(GL_ARRAY_BUFFER, ids[0]);
+	glBufferData(GL_ARRAY_BUFFER, data.vertices.size() * sizeof(float), data.vertices.data(), GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ARRAY_BUFFER, ids[1]);
+	glBufferData(GL_ARRAY_BUFFER, data.uvs.size() * sizeof(float), data.uvs.data(), GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ids[2]);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, data.indices.size() * sizeof(unsigned int), data.indices.data(), GL_STATIC_DRAW);
+
+// This is unnecessary in a correct renderer impl
+#ifndef NDEBUG
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+#endif
+
+	return meshes.insert(Ogl33Mesh{std::move(ids)});
+}
+
+void Ogl33Render::destroyMesh(const MeshId& id){
+	meshes.erase(id);
+}
+
+TextureId Ogl33Render::createTexture(const Image& image){
+	return 0;
+}
+
+void Ogl33Render::destroyTexture(const TextureId& id){
+	textures.erase(id);
+}
+
 Own<RenderWorld> Ogl33Render::createWorld(){
 	Own<Ogl33RenderWorld> world = heap<Ogl33RenderWorld>(*this);
 
@@ -194,8 +232,16 @@ Ogl33Render::~Ogl33Render(){
 }
 
 void Ogl33Render::flush(){
+	assert(context);
 	if(context){
 		context->flush();
+	}
+}
+
+void Ogl33Render::step(){
+	assert(context);
+	if(!context){
+		return;
 	}
 }
 }

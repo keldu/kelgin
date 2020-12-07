@@ -5,6 +5,7 @@
 #include <queue>
 #include <set>
 #include <vector>
+#include <array>
 #include <map>
 #include <cassert>
 
@@ -18,25 +19,21 @@ namespace gin {
 * Helper parent
 */
 class Ogl33Resource {
-private:
-	GLuint rid;
 protected:
-	~Ogl33Resource() = default;
 public:
-	Ogl33Resource(GLuint);
-
-	GLuint id() const;
 };
 
 class Ogl33Mesh final : public Ogl33Resource {
+private:
+	std::array<GLuint,3> ids;
 public:
-	using Ogl33Resource::Ogl33Resource;
+	Ogl33Mesh(std::array<GLuint,3>&&);
 	~Ogl33Mesh();
 };
 
 class Ogl33Texture final : public Ogl33Resource {
 public:
-	using Ogl33Resource::Ogl33Resource;
+
 	~Ogl33Texture();
 };
 
@@ -175,6 +172,12 @@ public:
 	Ogl33Render(Own<GlContext>&&);
 	~Ogl33Render();
 
+	MeshId createMesh(const MeshData&) override;
+	void destroyMesh(const MeshId&) override;
+
+	TextureId createTexture(const Image&) override;
+	void destroyTexture(const TextureId&) override;
+
 	Own<RenderWorld> createWorld() override;
 
 	RenderWindowId createWindow() override;
@@ -185,5 +188,6 @@ public:
 	void destroyedRenderWorld(Ogl33RenderWorld& rw);
 
 	void flush() override;
+	void step() override;
 };
 }
