@@ -88,7 +88,9 @@ public:
 			if(id < resources.size()){
 				resources[id] = std::move(data);
 			}else{
-				free_ids.clear();
+				while(!free_ids.empty()){
+					free_ids.pop();
+				}
 				resources.push_back(std::move(data));
 			}
 
@@ -104,7 +106,9 @@ public:
 				resources.pop_back();
 			}
 			if(free_ids.top() >= resources.size()){
-				free_ids.clear();
+				while(!free_ids.empty()){
+					free_ids.pop();
+				}
 			}
 		}else{
 			resources[id] = T{0};
