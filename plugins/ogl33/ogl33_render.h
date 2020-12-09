@@ -7,6 +7,7 @@
 #include <vector>
 #include <array>
 #include <map>
+#include <set>
 #include <cassert>
 
 #include "ogl33_bindings.h"
@@ -27,6 +28,7 @@ class Ogl33Mesh final : public Ogl33Resource {
 private:
 	std::array<GLuint,3> ids;
 public:
+	Ogl33Mesh();
 	Ogl33Mesh(std::array<GLuint,3>&&);
 	~Ogl33Mesh();
 };
@@ -47,6 +49,8 @@ class Ogl33RenderTarget {
 protected:
 	~Ogl33RenderTarget() = default;
 public:
+	virtual void beginRender() = 0;
+	virtual void endRender() = 0;
 };
 
 class Ogl33Window final : public Ogl33RenderTarget {
@@ -57,12 +61,18 @@ public:
 
 	void show();
 	void hide();
+
+	void beginRender() override;
+	void endRender() override;
 };
 
 class Ogl33RenderTexture final : public Ogl33RenderTarget {
 private:
 public:
 	~Ogl33RenderTexture();
+
+	void beginRender() override;
+	void endRender() override;
 };
 
 /// @todo maybe do this with deque?
@@ -72,7 +82,11 @@ public:
 template<typename I, typename T>
 class Ogl33RenderResourceVector {
 private:
-	std::vector<T> resources;
+	struct RefCountedRes {
+		size_t references = 0;
+		T resource;
+	};
+	std::vector<RefCountedRes> resources;
 	std::priority_queue<I, std::vector<I>, std::greater<I>> free_ids;
 public:
 	Ogl33RenderResourceVector(){
@@ -80,21 +94,25 @@ public:
 	}
 
 	I insert(T&& data){
+		I id;
 		if(free_ids.empty()){
-			resources.push_back(std::move(data));
+			id = resources.size();
+			resources.push_back({1,std::move(data)});
 		}else{
-			I id = free_ids.top();
+			id = free_ids.top();
 			free_ids.pop();
 			if(id < resources.size()){
-				resources[id] = std::move(data);
+				resources[id] = {1,std::move(data)};
 			}else{
 				while(!free_ids.empty()){
 					free_ids.pop();
 				}
-				resources.push_back(std::move(data));
+				resources.push_back({1,std::move(data)});
 			}
 
 		}
+
+		return id;
 	}
 
 	void erase(const I& id){
@@ -102,7 +120,7 @@ public:
 		assert(id < resources.size());
 		if( (id+1) == resources.size()){
 			resources.pop_back();
-			while(!resources.empty() && resources.back().id() == 0){
+			while(!resources.empty() && resources.back().references == 0){
 				resources.pop_back();
 			}
 			if(free_ids.top() >= resources.size()){
@@ -111,7 +129,7 @@ public:
 				}
 			}
 		}else{
-			resources[id] = T{0};
+			resources[id] = RefCountedRes{0,{}};
 			free_ids.push(id);
 		}
 	}
@@ -172,6 +190,16 @@ private:
 	Ogl33RenderTargetStorage render_targets;
 
 	std::set<Ogl33RenderWorld*> render_worlds;
+
+	struct RenderTargetUpdate {
+		std::chrono::steady_clock::duration seconds_per_frame;
+		std::chrono::steady_clock::time_point next_update;
+	};
+	std::unordered_map<RenderTargetId, RenderTargetUpdate> render_target_times;	
+
+	void stepWindowTimes(const std::chrono::steady_clock::time_point&);
+
+	std::queue<RenderTargetId> render_target_draw_tasks;
 public:
 	Ogl33Render(Own<GlContext>&&);
 	~Ogl33Render();
@@ -184,7 +212,8 @@ public:
 
 	Own<RenderWorld> createWorld() override;
 
-	RenderWindowId createWindow() override;
+	RenderWindowId createWindow(const RenderVideoMode&, const std::string&) override;
+	void setWindowDesiredFPS(const RenderWindowId&, float fps) override;
 	void destroyWindow(const RenderWindowId& id) override;
 
 	void setWindowVisibility(const RenderWindowId& id, bool show) override;
@@ -192,6 +221,6 @@ public:
 	void destroyedRenderWorld(Ogl33RenderWorld& rw);
 
 	void flush() override;
-	void step() override;
+	void step(const std::chrono::steady_clock::time_point&) override;
 };
 }

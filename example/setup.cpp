@@ -23,7 +23,7 @@ int main() {
 	auto render_world = render->createWorld();
 
 	//
-	RenderWindowId win_id = render->createWindow();
+	RenderWindowId win_id = render->createWindow({600,400}, "Kelgin Setup Example");
 
 	render->setWindowVisibility(win_id, true);
 	render->flush();

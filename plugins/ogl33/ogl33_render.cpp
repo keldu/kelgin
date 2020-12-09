@@ -4,8 +4,12 @@
 #include <cassert>
 
 namespace gin {
+Ogl33Mesh::Ogl33Mesh():
+	ids{0,0,0}
+{
+}
 
-Ogl33Mesh::Ogl33Mesh(const std::array<GLuint, 3>&& i):
+Ogl33Mesh::Ogl33Mesh(std::array<GLuint, 3>&& i):
 	ids{std::move(i)}
 {}
 
@@ -29,6 +33,26 @@ void Ogl33Window::hide(){
 		window->bind();
 		window->hide();
 	}
+}
+
+
+void Ogl33Window::beginRender(){
+	assert(window);
+	if(!window){
+		return;
+	}
+	window->bind();
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
+void Ogl33Window::endRender(){
+	assert(window);
+	if(!window){
+		return;
+	}
+
+	window->swap();
 }
 
 Ogl33RenderWorld::Ogl33RenderWorld(Ogl33Render& render):
@@ -190,13 +214,20 @@ Own<RenderWorld> Ogl33Render::createWorld(){
 	return world;
 }
 
-RenderWindowId Ogl33Render::createWindow() {
-	auto gl_win = context->createWindow(VideoMode{500,100}, "Kelgin Example");
+RenderWindowId Ogl33Render::createWindow(const RenderVideoMode& mode, const std::string& title) {
+	auto gl_win = context->createWindow(VideoMode{mode.width,mode.height}, title);
 	if(!gl_win){
 		return 0;
 	}
 
 	return render_targets.insert(Ogl33Window{std::move(gl_win)});
+}
+
+void Ogl33Render::setWindowDesiredFPS(const RenderWindowId& id, float fps){
+	Ogl33Window* window = render_targets.getWindow(id);
+	if(!window){
+		return;
+	}
 }
 
 void Ogl33Render::destroyWindow(const RenderWindowId& id){
@@ -231,6 +262,15 @@ Ogl33Render::~Ogl33Render(){
 	}
 }
 
+void Ogl33Render::stepWindowTimes(const std::chrono::steady_clock::time_point& tp){
+	for(auto& iter : window_times){
+		if(iter->second.next_update <= tp){
+			iter->second.next_update += iter->second.seconds_per_frame;
+			render_target_draw_tasks.push(iter.id);
+		}
+	}
+}
+
 void Ogl33Render::flush(){
 	assert(context);
 	if(context){
@@ -238,10 +278,26 @@ void Ogl33Render::flush(){
 	}
 }
 
-void Ogl33Render::step(){
+void Ogl33Render::step(const std::chrono::steady_clock::time_point& tp){
 	assert(context);
 	if(!context){
 		return;
+	}
+
+	stepWindowTimes(tp);
+
+	for(;!render_target_draw_tasks.empty(); render_target_draw_tasks.pop()){
+		auto front = render_target_draw_tasks.front();
+
+		Ogl33RenderTarget* target = render_targets[front];
+		assert(target);
+		if(!target){
+			continue;
+		}
+
+		target->beginRender();
+
+		target->endRender();
 	}
 }
 }
