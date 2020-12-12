@@ -237,6 +237,9 @@ public:
 	void setWindowDesiredFPS(const RenderWindowId&, float fps) override;
 	void destroyWindow(const RenderWindowId& id) override;
 
+	ProgramId createProgram(const std::string& vertex_src, const std::string& fragment_src) override;
+	void destroyProgram(const ProgramId&) override;
+
 	void setWindowVisibility(const RenderWindowId& id, bool show) override;
 
 	void destroyedRenderWorld(Ogl33RenderWorld& rw);

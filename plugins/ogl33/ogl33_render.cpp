@@ -49,7 +49,7 @@ void Ogl33Program::setTexture(const Ogl33Texture& tex){
 }
 
 void Ogl33Program::setMvp(const Matrix<float,3,3>& mvp){
-	glUniformMatrix3fv(mvp_id, 1, GL_TRUE, &mvp(0, 0));
+	glUniformMatrix3fv(mvp_uniform, 1, GL_TRUE, &mvp(0, 0));
 }
 
 void Ogl33Program::setMesh(const Ogl33Mesh& mesh){
@@ -322,6 +322,79 @@ void Ogl33Render::setWindowVisibility(const RenderWindowId& id, bool show){
 	}else{
 		window->hide();
 	}
+}
+
+namespace {
+GLuint createShader(const std::string &source, GLenum type) {
+	GLuint id = glCreateShader(type);
+	if (id == 0) {
+		std::cerr<<"Failed to create shader"<<error_msg<<std::endl;
+		//log_error("Failed to create shader");
+		return id;
+	}
+
+	GLint result = GL_FALSE;
+	int info_length;
+
+	const char *source_data = source.c_str();
+	glShaderSource(id, 1, &source_data, nullptr);
+	glCompileShader(id);
+
+	glGetShaderiv(id, GL_COMPILE_STATUS, &result);
+	glGetShaderiv(id, GL_INFO_LOG_LENGTH, &info_length);
+	if (info_length > 1 || result == GL_FALSE) {
+		std::string error_msg;
+		error_msg.resize(info_length);
+		glGetShaderInfoLog(id, info_length, nullptr, &error_msg[0]);
+
+		std::cerr<<"Failed to compile "<<error_msg<<std::endl;
+		// log_error(std::string{"Failed to compile "} + error_msg);
+	}
+
+	return id;
+}
+}
+
+ProgramId Ogl33Render::createProgram(const std::string& vertex_src, const std::string& fragment_src){
+	GLuint vertex_shader_id =
+		createShader(vertex_src, GL_VERTEX_SHADER);
+	GLuint fragment_shader_id =
+		createShader(vertex_src, GL_FRAGMENT_SHADER);
+
+	if (vertex_shader_id == 0 || fragment_shader_id == 0) {
+		if(vertex_shader_id != 0){
+			glDeleteShader(vertex_shader_id);
+		}
+		if(fragment_shader_id != 0){
+			glDeleteShader(fragment_shader_id);
+		}
+		return 0;
+	}
+
+	GLuint p_id = glCreateProgram();
+
+	if (p_id == 0) {
+		glDeleteShader(vertex_shader_id);
+		glDeleteShader(fragment_shader_id);
+		return 0;
+	}
+
+	glAttachShader(p_id, vertex_shader_id);
+	glAttachShader(p_id, fragment_shader_id);
+	glLinkProgram(p_id);
+	glDetachShader(p_id, vertex_shader_id);
+	glDetachShader(p_id, fragment_shader_id);
+	glDeleteShader(vertex_shader_id);
+	glDeleteShader(fragment_shader_id);
+
+	GLuint mvp_id = glGetUniformLocation(p_id, "mvp");
+	GLuint texture_sampler_id = glGetUniformLocation(p_id, "texture_sampler");
+
+	return programs.insert(Ogl33Program{p_id, texture_sampler_id, mvp_id});
+}
+
+void Ogl33Render::destroyProgram(const ProgramId&){
+
 }
 
 void Ogl33Render::destroyedRenderWorld(Ogl33RenderWorld& rw){
