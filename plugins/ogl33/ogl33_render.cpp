@@ -17,6 +17,57 @@ Ogl33Mesh::~Ogl33Mesh(){
 	glDeleteBuffers(3, &ids[0]);
 }
 
+Ogl33Texture::Ogl33Texture():
+	Ogl33Texture(0)
+{}
+
+Ogl33Texture::Ogl33Texture(GLuint tex_id):
+	tex_id{tex_id}
+{}
+
+Ogl33Texture::~Ogl33Texture(){
+	glDeleteTextures(1, &tex_id);
+}
+
+Ogl33Program::Ogl33Program(GLuint p_id, GLuint tex_id, GLuint mvp_id):
+	program_id{p_id},
+	texture_uniform{tex_id},
+	mvp_uniform{mvp_id}
+{}
+
+Ogl33Program::Ogl33Program():
+	Ogl33Program(0,0,0)
+{}
+
+Ogl33Program::~Ogl33Program(){
+	glDeleteProgram(program_id);
+}
+
+void Ogl33Program::setTexture(const Ogl33Texture& tex){
+	glUniform1i(texture_uniform, 0);
+	glActiveTexture(GL_TEXTURE0);
+}
+
+void Ogl33Program::setMvp(const Matrix<float,3,3>& mvp){
+	glUniformMatrix3fv(mvp_id, 1, GL_TRUE, &mvp(0, 0));
+}
+
+void Ogl33Program::setMesh(const Ogl33Mesh& mesh){
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, static_cast<void *>(0));
+
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, static_cast<void *>(0));
+}
+
+void Ogl33Program::use(){
+	glUseProgram(program_id);
+}
+
+void Ogl33RenderTarget::setClearColour(const std::array<float,4>& colour){
+	clear_colour = colour;
+}
+
 Ogl33Window::Ogl33Window(Own<GlWindow>&& win):
 	window{std::move(win)}
 {}
@@ -43,6 +94,7 @@ void Ogl33Window::beginRender(){
 	}
 	window->bind();
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glClearColor(clear_colour[0], clear_colour[1], clear_colour[2], clear_colour[3]);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
@@ -53,6 +105,17 @@ void Ogl33Window::endRender(){
 	}
 
 	window->swap();
+}
+
+Ogl33RenderTexture::~Ogl33RenderTexture(){
+}
+
+void Ogl33RenderTexture::beginRender(){
+
+}
+
+void Ogl33RenderTexture::endRender(){
+
 }
 
 Ogl33RenderWorld::Ogl33RenderWorld(Ogl33Render& render):
@@ -199,7 +262,15 @@ void Ogl33Render::destroyMesh(const MeshId& id){
 }
 
 TextureId Ogl33Render::createTexture(const Image& image){
-	return 0;
+	GLuint texture_id;
+	glGenTextures(1, &texture_id);
+	glBindTexture(GL_TEXTURE_2D, texture_id);
+
+
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	return textures.insert(Ogl33Texture{texture_id});
 }
 
 void Ogl33Render::destroyTexture(const TextureId& id){
@@ -228,6 +299,12 @@ void Ogl33Render::setWindowDesiredFPS(const RenderWindowId& id, float fps){
 	if(!window){
 		return;
 	}
+
+	auto& update = render_target_times[static_cast<RenderTargetId>(id)];
+
+	std::chrono::duration<float, std::ratio<1,1>> fps_chrono{1.0f / fps};
+	update.next_update = std::chrono::steady_clock::now();
+	update.seconds_per_frame = std::chrono::duration_cast<std::chrono::steady_clock::duration>(fps_chrono);
 }
 
 void Ogl33Render::destroyWindow(const RenderWindowId& id){
@@ -262,11 +339,14 @@ Ogl33Render::~Ogl33Render(){
 	}
 }
 
-void Ogl33Render::stepWindowTimes(const std::chrono::steady_clock::time_point& tp){
-	for(auto& iter : window_times){
-		if(iter->second.next_update <= tp){
-			iter->second.next_update += iter->second.seconds_per_frame;
-			render_target_draw_tasks.push(iter.id);
+void Ogl33Render::stepRenderTargetTimes(const std::chrono::steady_clock::time_point& tp){
+	for(auto& iter : render_target_times){
+		if(iter.second.next_update <= tp){
+			iter.second.next_update += iter.second.seconds_per_frame;
+			render_target_draw_tasks.push(iter.first);
+			while(iter.second.next_update <= tp){
+				iter.second.next_update += iter.second.seconds_per_frame;
+			}
 		}
 	}
 }
@@ -284,7 +364,7 @@ void Ogl33Render::step(const std::chrono::steady_clock::time_point& tp){
 		return;
 	}
 
-	stepWindowTimes(tp);
+	stepRenderTargetTimes(tp);
 
 	for(;!render_target_draw_tasks.empty(); render_target_draw_tasks.pop()){
 		auto front = render_target_draw_tasks.front();

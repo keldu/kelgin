@@ -39,18 +39,21 @@ RenderPlugins loadAllRenderPluginsIn(const std::filesystem::path& dir){
 		std::filesystem::path path = file.path();
 		ErrorOr<DynamicLibrary> lib = loadDynamicLibrary(path);
 		if(!lib.isValue()){
+			std::cerr<<"Cannot load library at "<<file<<std::endl;
 			continue;
 		}
 
 		std::function<Render*(AsyncIoProvider&)> create_render = reinterpret_cast<Render*(*)(AsyncIoProvider&)>(lib.value().symbol("createRenderer"));
 		assert(create_render);
 		if(!create_render){
+			std::cerr<<"Cannot load function create_render"<<std::endl;
 			continue;
 		}
 
 		std::function<void(Render*)> destroy_render = reinterpret_cast<void(*)(Render*)>(lib.value().symbol("destroyRenderer"));
 		assert(destroy_render);
 		if(!destroy_render){
+			std::cerr<<"Cannot load function destroy_render"<<std::endl;
 			continue;
 		}
 
@@ -67,6 +70,7 @@ RenderPlugins loadAllRenderPluginsIn(const std::filesystem::path& dir){
 		}
 
 		path_string = ps_view;
+
 		plugins.insert(std::make_pair(std::move(path_string), RenderPlugins::Plugin{std::move(lib.value()), std::move(create_render), std::move(destroy_render)}));
 	}
 

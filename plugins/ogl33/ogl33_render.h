@@ -15,6 +15,8 @@
 #include <kelgin/window/gl/gl_context.h>
 #include <kelgin/common.h>
 
+#include "common/math.h"
+
 namespace gin {
 /**
 * Helper parent
@@ -34,23 +36,42 @@ public:
 };
 
 class Ogl33Texture final : public Ogl33Resource {
+private:
+	GLuint tex_id;
 public:
-
+	Ogl33Texture();
+	Ogl33Texture(GLuint tex_id);
 	~Ogl33Texture();
 };
 
 class Ogl33Program final : public Ogl33Resource {
+private:
+	GLuint program_id;
+
+	GLuint texture_uniform;
+	GLuint mvp_uniform;
 public:
-	using Ogl33Resource::Ogl33Resource;
+	Ogl33Program();
+	Ogl33Program(GLuint, GLuint, GLuint);
 	~Ogl33Program();
+
+	void setTexture(const Ogl33Texture&);
+	void setMvp(const Matrix<float,3,3>&);
+	void setMesh(const Ogl33Mesh&);
+
+	void use();
 };
 
 class Ogl33RenderTarget {
 protected:
 	~Ogl33RenderTarget() = default;
+
+	std::array<float, 4> clear_colour = {0.f, 0.f, 0.f, 1.f};
 public:
 	virtual void beginRender() = 0;
 	virtual void endRender() = 0;
+
+	void setClearColour(const std::array<float, 4>& colour);
 };
 
 class Ogl33Window final : public Ogl33RenderTarget {
@@ -197,7 +218,7 @@ private:
 	};
 	std::unordered_map<RenderTargetId, RenderTargetUpdate> render_target_times;	
 
-	void stepWindowTimes(const std::chrono::steady_clock::time_point&);
+	void stepRenderTargetTimes(const std::chrono::steady_clock::time_point&);
 
 	std::queue<RenderTargetId> render_target_draw_tasks;
 public:

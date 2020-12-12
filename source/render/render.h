@@ -49,6 +49,8 @@ struct RenderVideoMode {
 	size_t height;
 };
 
+/// @todo Add a better timer. The sleeping call needs to know when it should wake up
+/// And Render should know when one of its windows needs to render.
 class Render {
 protected:
 public:
@@ -65,9 +67,11 @@ public:
 
 	virtual RenderWindowId createWindow(const RenderVideoMode&, const std::string& title) = 0;
 	virtual void setWindowDesiredFPS(const RenderWindowId&, float fps) = 0;
+	virtual void setWindowVisibility(const RenderWindowId& id, bool show) = 0;
 	virtual void destroyWindow(const RenderWindowId& id) = 0;
 
-	virtual void setWindowVisibility(const RenderWindowId& id, bool show) = 0;
+	virtual ProgramId createProgram(const std::string& vertex_src, const std::string& fragment_src) = 0;
+	virtual void destroyProgram(const ProgramId&) = 0;
 
 	virtual void step(const std::chrono::steady_clock::time_point&) = 0;
 	virtual void flush() = 0;
