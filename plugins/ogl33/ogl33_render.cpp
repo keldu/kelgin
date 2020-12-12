@@ -328,7 +328,7 @@ namespace {
 GLuint createShader(const std::string &source, GLenum type) {
 	GLuint id = glCreateShader(type);
 	if (id == 0) {
-		std::cerr<<"Failed to create shader"<<error_msg<<std::endl;
+		std::cerr<<"Failed to create shader"<<std::endl;
 		//log_error("Failed to create shader");
 		return id;
 	}
