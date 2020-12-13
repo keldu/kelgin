@@ -107,6 +107,19 @@ void Ogl33Window::endRender(){
 	window->swap();
 }
 
+void Ogl33Window::bindAsMain(){
+	assert(window);
+	if(!window){
+
+	}
+
+	window->bind();
+}
+
+void Ogl33Window::bind(){
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
 Ogl33RenderTexture::~Ogl33RenderTexture(){
 }
 
@@ -115,6 +128,10 @@ void Ogl33RenderTexture::beginRender(){
 }
 
 void Ogl33RenderTexture::endRender(){
+
+}
+
+void Ogl33RenderTexture::bind(){
 
 }
 

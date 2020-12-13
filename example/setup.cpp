@@ -27,7 +27,6 @@ int main() {
 	render->flush();
 
 	ProgramId program_id = render->createProgram(default_vertex_shader, default_fragment_shader);
-	std::cout <<"Program id: "<<std::to_string(program_id)<<std::endl;
 
 	// Have this as a 2D object
 	auto render_world = render->createWorld();

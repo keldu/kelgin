@@ -74,6 +74,8 @@ public:
 	virtual void endRender() = 0;
 
 	void setClearColour(const std::array<float, 4>& colour);
+
+	virtual void bind() = 0;
 };
 
 class Ogl33Window final : public Ogl33RenderTarget {
@@ -87,6 +89,17 @@ public:
 
 	void beginRender() override;
 	void endRender() override;
+
+	/**
+	* This binds the window as the current 0 framebuffer in its context
+	* This is different to glBindFramebuffer(0);
+	*/
+	void bindAsMain();
+
+	/**
+	*
+	*/
+	void bind() override;
 };
 
 class Ogl33RenderTexture final : public Ogl33RenderTarget {
@@ -96,6 +109,8 @@ public:
 
 	void beginRender() override;
 	void endRender() override;
+
+	void bind() override;
 };
 
 /// @todo maybe do this with deque?
