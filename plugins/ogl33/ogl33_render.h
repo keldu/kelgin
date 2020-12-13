@@ -10,6 +10,8 @@
 #include <set>
 #include <cassert>
 
+#include <iostream>
+
 #include "ogl33_bindings.h"
 
 #include <kelgin/window/gl/gl_context.h>
@@ -138,6 +140,7 @@ public:
 
 	void erase(const I& id){
 		/// @unsure Should I handle this differently?
+		std::cout<<std::to_string(id)<<" "<<std::to_string(resources.size())<<std::endl;
 		assert(id < resources.size());
 		if( (id+1) == resources.size()){
 			resources.pop_back();
@@ -204,11 +207,11 @@ class Ogl33Render final : public Render {
 private:
 	Own<GlContext> context;
 
+	Ogl33RenderTargetStorage render_targets;
+
 	Ogl33RenderResourceVector<MeshId, Ogl33Mesh> meshes;
 	Ogl33RenderResourceVector<TextureId, Ogl33Texture> textures;
 	Ogl33RenderResourceVector<ProgramId, Ogl33Program> programs;
-
-	Ogl33RenderTargetStorage render_targets;
 
 	std::set<Ogl33RenderWorld*> render_worlds;
 

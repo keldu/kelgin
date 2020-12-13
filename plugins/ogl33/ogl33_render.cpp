@@ -291,6 +291,8 @@ RenderWindowId Ogl33Render::createWindow(const RenderVideoMode& mode, const std:
 		return 0;
 	}
 
+	gl_win->bind();
+
 	return render_targets.insert(Ogl33Window{std::move(gl_win)});
 }
 
@@ -356,10 +358,12 @@ GLuint createShader(const std::string &source, GLenum type) {
 }
 
 ProgramId Ogl33Render::createProgram(const std::string& vertex_src, const std::string& fragment_src){
+	// context->bind();
+
 	GLuint vertex_shader_id =
 		createShader(vertex_src, GL_VERTEX_SHADER);
 	GLuint fragment_shader_id =
-		createShader(vertex_src, GL_FRAGMENT_SHADER);
+		createShader(fragment_src, GL_FRAGMENT_SHADER);
 
 	if (vertex_shader_id == 0 || fragment_shader_id == 0) {
 		if(vertex_shader_id != 0){
@@ -393,8 +397,8 @@ ProgramId Ogl33Render::createProgram(const std::string& vertex_src, const std::s
 	return programs.insert(Ogl33Program{p_id, texture_sampler_id, mvp_id});
 }
 
-void Ogl33Render::destroyProgram(const ProgramId&){
-
+void Ogl33Render::destroyProgram(const ProgramId& id){
+	programs.erase(id);
 }
 
 void Ogl33Render::destroyedRenderWorld(Ogl33RenderWorld& rw){
