@@ -18,14 +18,15 @@ using RenderTargetId = ResourceId;
 using RenderTextureId = RenderTargetId;
 using RenderWindowId = RenderTargetId;
 
-class Render;
-class RenderScene {
+using RenderCameraId = ResourceId;
+using RenderStageId = ResourceId;
+using RenderViewportId = ResourceId;
 
-};
 
 class MeshData {
 public:
-	std::vector<float> vertices, uvs;
+	std::vector<float> vertices;
+	std::vector<float> uvs;
 	std::vector<int> indices;
 };
 
@@ -36,12 +37,24 @@ public:
 	uint8_t channels;
 };
 
+class RenderScene {
+public:
+	virtual ~RenderScene() = default;
+
+	virtual void attachObjectToScene(const RenderObjectId&) = 0;
+	virtual void detachObjectFromScene(const RenderObjectId&) = 0;
+	virtual void setObjectPosition(const RenderObjectId&, float, float) = 0;
+	virtual void setObjectRotation(const RenderObjectId&, float) = 0;
+};
+
 class RenderWorld {
 public:
 	virtual ~RenderWorld() = default;
 
-	//virtual RenderObjectId createObject(const MeshId&, const TextureId&) = 0;
-	//virtual void destroyObject(const RenderObjectId&) = 0;
+	virtual RenderObjectId createObject(const MeshId&, const TextureId&) = 0;
+	virtual void destroyObject(const RenderObjectId&) = 0;
+
+	virtual Own<RenderScene> createScene() = 0;
 };
 
 struct RenderVideoMode {
@@ -51,10 +64,10 @@ struct RenderVideoMode {
 
 /// @todo Add a better timer. The sleeping call needs to know when it should wake up
 /// And Render should know when one of its windows needs to render.
-class Render {
+class LowLevelRender {
 protected:
 public:
-	virtual ~Render() = default;
+	virtual ~LowLevelRender() = default;
 
 	virtual MeshId createMesh(const MeshData&) = 0;
 	virtual void destroyMesh(const MeshId&) = 0;
@@ -72,6 +85,18 @@ public:
 
 	virtual ProgramId createProgram(const std::string& vertex_src, const std::string& fragment_src) = 0;
 	virtual void destroyProgram(const ProgramId&) = 0;
+
+	virtual RenderCameraId createCamera() = 0;
+	virtual void setCameraPosition(const RenderCameraId&, float x, float y) = 0;
+	virtual void setCameraRotation(const RenderCameraId&, float alpha) = 0;
+	virtual void destroyCamera(const RenderCameraId&) = 0;
+
+	virtual RenderStageId createStage(const RenderTargetId& id, const RenderSceneId&, const RenderCameraId&) = 0;
+	virtual void destroyStage(const RenderStageId&) = 0;
+
+	virtual RenderViewportId createViewport() = 0;
+	virtual void setViewportRect(const RenderViewportId&, float, float, float, float) = 0;
+	virtual void destroyViewport(const RenderViewportId&) = 0;
 
 	virtual void step(const std::chrono::steady_clock::time_point&) = 0;
 	virtual void flush() = 0;

@@ -27,9 +27,27 @@ int main() {
 	render->flush();
 
 	ProgramId program_id = render->createProgram(default_vertex_shader, default_fragment_shader);
+	MeshId mesh_id = render->createMesh(default_mesh);
 
-	// Have this as a 2D object
-	auto render_world = render->createWorld();
+	Own<RenderWorld> world = render->createWorld();
+	if(!world){
+		std::cerr<<"Couldn't create RenderWorld"<<std::endl;
+		return -1;
+	}
+
+	Own<RenderScene> scene = world->createScene();
+	if(!scene){
+		std::cerr<<"Couldn't create RenderScene" <<std::endl;
+	}
+
+	RenderObjectId ro_id = world->createRenderObject(mesh_id, 0);
+
+	scene->attachObjectToScene(ro_id);
+	scene->setObjectPosition(0.f, 0.f);
+
+	RenderCameraId camera_id = world->createCamera();
+
+	RenderStageId stage_id = world->createStage(win_id, scene_id, camera_id);
 
 	render->setWindowVisibility(win_id, true);
 	render->setWindowDesiredFPS(win_id, 10.0f);
@@ -39,13 +57,17 @@ int main() {
 		auto time = std::chrono::steady_clock::now();
 		render->step(time);
 
-
 		render->flush();
 		async.wait_scope.wait(std::chrono::milliseconds{10});
 	}
 
-	//render->destroyProgram(program_id);
+	scene = nullptr;
 
+	world->destroyRenderObject(ro_id);
+	world = nullptr;
+
+	render->destroyMesh(mesh_id);
+	render->destroyProgram(program_id);
 
 	return 0;
 }

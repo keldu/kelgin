@@ -28,6 +28,36 @@ protected:
 public:
 };
 
+class Ogl33RenderStage {
+
+};
+
+class Ogl33Camera {
+private:
+	Matrix<float, 3, 3> projection_matrix;
+	Matrix<float, 3, 3> view_matrix;
+public:
+	Ogl33Camera();
+
+	void setViewPosition(float x, float y);
+	void setViewRotation(float angle);
+
+	const Matrix<float, 3,3>& view() const;
+	const Matrix<float, 3,3>& projection() const;
+};
+
+class Ogl33Viewport {
+private:
+	float x;
+	float y;
+	float width;
+	float height;
+public:
+	Ogl33Viewport(float x, float y,float w, float h);
+
+	void use();
+};
+
 class Ogl33Mesh final : public Ogl33Resource {
 private:
 	std::array<GLuint,3> ids;
@@ -155,7 +185,6 @@ public:
 
 	void erase(const I& id){
 		/// @unsure Should I handle this differently?
-		std::cout<<std::to_string(id)<<" "<<std::to_string(resources.size())<<std::endl;
 		assert(id < resources.size());
 		if( (id+1) == resources.size()){
 			resources.pop_back();
@@ -185,14 +214,69 @@ public:
 };
 
 class Ogl33Render;
+class Ogl33RenderWorld;
+class Ogl33RenderScene final : public RenderScene {
+private:
+	Ogl33RenderWorld* world;
+
+	struct RenderObjectData {
+		float x = 0, y = 0;
+		float angle = 0;
+	};
+
+	std::unordered_map<RenderObjectId, RenderObjectData> ro_data;
+public:
+	Ogl33RenderScene(Ogl33RenderWorld&);
+	~Ogl33RenderScene();
+
+	void destroyedWorld();
+
+	void attachObjectToScene(const RenderObjectId&) override;
+	void detachObjectFromScene(const RenderObjectId&) override;
+	void setObjectPosition(const RenderObjectId&, float, float) override;
+	void setObjectRotation(const RenderObjectId&, float) override;
+};
+
 class Ogl33RenderWorld final : public RenderWorld {
 private:
 	Ogl33Render* renderer;
+
+	std::set<Ogl33RenderScene*> render_scenes;
+
+	struct RenderObjectData {
+		MeshId mesh_id;
+		TextureId texture_id;
+	};
+	std::unordered_map<RenderObjectId, RenderObjectData> objects;
+
+	std::unordered_map<RenderCameraId, Ogl33Camera> cameras;
+
+	std::unordered_map<RenderStageId, Ogl33RenderStage> render_stages;
+
+	std::unordered_map<RenderViewportId, Ogl33Viewport> viewports;
 public:
 	Ogl33RenderWorld(Ogl33Render&);
 	~Ogl33RenderWorld();
 
+	void destroyedRenderScene(Ogl33RenderScene& scene);
 	void destroyedRender();
+
+	RenderObjectId createObject(const MeshId&, const TextureId&) override;
+	void destroyObject(const RenderObjectId&) override;
+
+	Own<RenderScene> createScene() override;
+
+	RenderCameraId createCamera() override;
+	void setCameraPosition(const RenderCameraId&, float x, float y) override;
+	void setCameraRotation(const RenderCameraId&, float angle) override;
+	void destroyCamera(const RenderCameraId&) override;
+
+	RenderStageId createStage(const RenderTargetId& id, const RenderSceneId&, const RenderCameraId&) override;
+	void destroyStage(const RenderStageId&) override;
+
+	RenderViewportId createViewport() override;
+	void setViewportRect(const RenderViewportId&, float, float, float, float) override;
+	void destroyViewport(const RenderViewportId&) override;
 };
 
 /// @todo this storage kinda feels hacky
@@ -243,6 +327,8 @@ public:
 	Ogl33Render(Own<GlContext>&&);
 	~Ogl33Render();
 
+	void destroyedRenderWorld(Ogl33RenderWorld& rw);
+
 	MeshId createMesh(const MeshData&) override;
 	void destroyMesh(const MeshId&) override;
 
@@ -259,8 +345,6 @@ public:
 	void destroyProgram(const ProgramId&) override;
 
 	void setWindowVisibility(const RenderWindowId& id, bool show) override;
-
-	void destroyedRenderWorld(Ogl33RenderWorld& rw);
 
 	void flush() override;
 	void step(const std::chrono::steady_clock::time_point&) override;

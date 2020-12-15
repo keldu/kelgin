@@ -4,6 +4,45 @@
 #include <cassert>
 
 namespace gin {
+Ogl33Camera::Ogl33Camera()
+{
+	for(size_t i = 0; i < 3; ++i){
+		projection_matrix(i,i) = 1.0f;
+		view_matrix(i,i) = 1.0f;
+	}
+}
+
+void Ogl33Camera::setViewPosition(float x, float y){
+	view_matrix(0, 2) = x;
+	view_matrix(1, 2) = y;
+}
+
+void Ogl33Camera::setViewRotation(float angle){
+	view_matrix(0,0) = cos(angle);
+	view_matrix(0,1) = sin(angle);
+	view_matrix(1,0) = -sin(angle);
+	view_matrix(1,1) = cos(angle);
+}
+
+const Matrix<float, 3,3>& Ogl33Camera::view() const {
+	return view_matrix;
+}
+
+const Matrix<float, 3,3>& Ogl33Camera::projection() const {
+	return projection_matrix;
+}
+
+Ogl33Viewport::Ogl33Viewport(float x, float y, float width, float height):
+	x{x},
+	y{y},
+	width{width},
+	height{height}
+{}
+
+void Ogl33Viewport::use(){
+	glViewport(x, y, width, height);
+}
+
 Ogl33Mesh::Ogl33Mesh():
 	ids{0,0,0}
 {
@@ -135,6 +174,46 @@ void Ogl33RenderTexture::bind(){
 
 }
 
+Ogl33RenderScene::Ogl33RenderScene(Ogl33RenderWorld& w):
+	world{&w}
+{}
+
+Ogl33RenderScene::~Ogl33RenderScene(){
+	assert(world);
+	if(world){
+		world->destroyedRenderScene(*this);
+	}
+}
+
+void Ogl33RenderScene::destroyedWorld(){
+	world = nullptr;
+}
+
+void Ogl33RenderScene::attachObjectToScene(const RenderObjectId& id){
+	ro_data.insert(std::make_pair(id, RenderObjectData{0.f, 0.f, 0.f}));
+}
+
+void Ogl33RenderScene::detachObjectFromScene(const RenderObjectId& id){
+	ro_data.erase(id);
+}
+
+void Ogl33RenderScene::setObjectPosition(const RenderObjectId& id, float x, float y){
+	auto ro_find = ro_data.find(id);
+	assert(ro_find != ro_data.end());
+	if(ro_find != ro_data.end()){
+		ro_find->second.x = x;
+		ro_find->second.x = y;
+	}
+}
+
+void Ogl33RenderScene::setObjectRotation(const RenderObjectId& id, float angle){
+	auto ro_find = ro_data.find(id);
+	assert(ro_find != ro_data.end());
+	if(ro_find != ro_data.end()){
+		ro_find->second.angle = angle;
+	}
+}
+
 Ogl33RenderWorld::Ogl33RenderWorld(Ogl33Render& render):
 	renderer{&render}
 {}
@@ -144,11 +223,112 @@ Ogl33RenderWorld::~Ogl33RenderWorld(){
 	if(renderer){
 		renderer->destroyedRenderWorld(*this);
 	}
+
+	assert(render_scenes.empty());
+	for(auto& scene : render_scenes){
+		scene->destroyedWorld();
+	}
+}
+
+void Ogl33RenderWorld::destroyedRenderScene(Ogl33RenderScene& scene){
+	render_scenes.erase(&scene);
 }
 
 void Ogl33RenderWorld::destroyedRender(){
 	assert(renderer);
 	renderer = nullptr;
+}
+
+RenderObjectId Ogl33RenderWorld::createObject(const MeshId& mesh_id, const TextureId& tex_id){
+	RenderObjectId id = 0;
+	for(bool found = false; !found; ++id){
+		auto find_free_id = objects.find(id);
+		if(find_free_id != objects.end()){
+			found = true;
+		}
+	}
+
+	objects.insert(std::make_pair(id, RenderObjectData{mesh_id, tex_id}));
+
+	return id;
+}
+
+void Ogl33RenderWorld::destroyObject(const RenderObjectId& id){
+	objects.erase(id);
+}
+
+Own<RenderScene> Ogl33RenderWorld::createScene(){
+	auto scene = heap<Ogl33RenderScene>(*this);
+
+	render_scenes.insert(scene.get());
+
+	return scene;
+}
+
+RenderCameraId Ogl33RenderWorld::createCamera(){
+	RenderCameraId id = 0;
+	for(bool found = false; !found; ++id){
+		auto find_free_id = cameras.find(id);
+		if(find_free_id != cameras.end()){
+			found = true;
+		}
+	}
+
+	cameras.insert(std::make_pair(id, Ogl33Camera{}));
+
+	return id;
+}
+
+void Ogl33RenderWorld::setCameraPosition(const RenderCameraId& id, float x, float y){
+	auto find = cameras.find(id);
+	if(find != cameras.end()){
+		find->second.setViewPosition(x,y);
+	}
+}
+
+void Ogl33RenderWorld::setCameraRotation(const RenderCameraId& id, float angle){
+	auto find = cameras.find(id);
+	if(find != cameras.end()){
+		find->second.setViewRotation(angle);	
+	}
+}
+
+void Ogl33RenderWorld::destroyCamera(const RenderCameraId& id){
+	cameras.erase(id);
+}
+
+RenderStageId Ogl33RenderWorld::createStage(const RenderTargetId& id, const RenderSceneId& scene, const RenderCameraId& camera){
+	return 0;
+}
+
+void Ogl33RenderWorld::destroyStage(const RenderStageId& id){
+	render_stages.erase(id);
+}
+
+RenderViewportId Ogl33RenderWorld::createViewport(){
+
+	RenderViewportId id = 0;
+	for(bool found = false; !found; ++id){
+		auto find_free_id = viewports.find(id);
+		if(find_free_id != viewports.end()){
+			found = true;
+		}
+	}
+
+	viewports.insert(std::make_pair(id, Ogl33Viewport{0,0,0,0}));
+
+	return id;
+}
+
+void Ogl33RenderWorld::setViewportRect(const RenderViewportId& id, float x, float y, float width, float height){
+	auto find = viewports.find(id);
+	if(find != viewports.end()){
+		find->second = Ogl33Viewport{x, y, width, height};
+	}
+}
+
+void Ogl33RenderWorld::destroyViewport(const RenderViewportId& id){
+	viewports.erase(id);
 }
 
 RenderTextureId Ogl33RenderTargetStorage::insert(Ogl33RenderTexture&& rt){
