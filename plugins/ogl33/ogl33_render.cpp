@@ -4,6 +4,24 @@
 #include <cassert>
 
 namespace gin {
+namespace {
+/** 
+* @todo optimize with a custom container
+* Fast implementation so it works
+*/
+template<typename Id, typename T>
+Id searchForFreeId(std::unordered_map<Id, T>& map){
+	Id id = 1;
+	for(bool found = false; !found; ++id){
+		auto find = map.find(id);
+		if(find == map.end()){
+			found = true;
+		}
+	}
+	return id;
+}
+}
+
 Ogl33Camera::Ogl33Camera()
 {
 	for(size_t i = 0; i < 3; ++i){
@@ -174,163 +192,6 @@ void Ogl33RenderTexture::bind(){
 
 }
 
-Ogl33RenderScene::Ogl33RenderScene(Ogl33RenderWorld& w):
-	world{&w}
-{}
-
-Ogl33RenderScene::~Ogl33RenderScene(){
-	assert(world);
-	if(world){
-		world->destroyedRenderScene(*this);
-	}
-}
-
-void Ogl33RenderScene::destroyedWorld(){
-	world = nullptr;
-}
-
-void Ogl33RenderScene::attachObjectToScene(const RenderObjectId& id){
-	ro_data.insert(std::make_pair(id, RenderObjectData{0.f, 0.f, 0.f}));
-}
-
-void Ogl33RenderScene::detachObjectFromScene(const RenderObjectId& id){
-	ro_data.erase(id);
-}
-
-void Ogl33RenderScene::setObjectPosition(const RenderObjectId& id, float x, float y){
-	auto ro_find = ro_data.find(id);
-	assert(ro_find != ro_data.end());
-	if(ro_find != ro_data.end()){
-		ro_find->second.x = x;
-		ro_find->second.x = y;
-	}
-}
-
-void Ogl33RenderScene::setObjectRotation(const RenderObjectId& id, float angle){
-	auto ro_find = ro_data.find(id);
-	assert(ro_find != ro_data.end());
-	if(ro_find != ro_data.end()){
-		ro_find->second.angle = angle;
-	}
-}
-
-Ogl33RenderWorld::Ogl33RenderWorld(Ogl33Render& render):
-	renderer{&render}
-{}
-
-Ogl33RenderWorld::~Ogl33RenderWorld(){
-	assert(renderer);
-	if(renderer){
-		renderer->destroyedRenderWorld(*this);
-	}
-
-	assert(render_scenes.empty());
-	for(auto& scene : render_scenes){
-		scene->destroyedWorld();
-	}
-}
-
-void Ogl33RenderWorld::destroyedRenderScene(Ogl33RenderScene& scene){
-	render_scenes.erase(&scene);
-}
-
-void Ogl33RenderWorld::destroyedRender(){
-	assert(renderer);
-	renderer = nullptr;
-}
-
-RenderObjectId Ogl33RenderWorld::createObject(const MeshId& mesh_id, const TextureId& tex_id){
-	RenderObjectId id = 0;
-	for(bool found = false; !found; ++id){
-		auto find_free_id = objects.find(id);
-		if(find_free_id != objects.end()){
-			found = true;
-		}
-	}
-
-	objects.insert(std::make_pair(id, RenderObjectData{mesh_id, tex_id}));
-
-	return id;
-}
-
-void Ogl33RenderWorld::destroyObject(const RenderObjectId& id){
-	objects.erase(id);
-}
-
-Own<RenderScene> Ogl33RenderWorld::createScene(){
-	auto scene = heap<Ogl33RenderScene>(*this);
-
-	render_scenes.insert(scene.get());
-
-	return scene;
-}
-
-RenderCameraId Ogl33RenderWorld::createCamera(){
-	RenderCameraId id = 0;
-	for(bool found = false; !found; ++id){
-		auto find_free_id = cameras.find(id);
-		if(find_free_id != cameras.end()){
-			found = true;
-		}
-	}
-
-	cameras.insert(std::make_pair(id, Ogl33Camera{}));
-
-	return id;
-}
-
-void Ogl33RenderWorld::setCameraPosition(const RenderCameraId& id, float x, float y){
-	auto find = cameras.find(id);
-	if(find != cameras.end()){
-		find->second.setViewPosition(x,y);
-	}
-}
-
-void Ogl33RenderWorld::setCameraRotation(const RenderCameraId& id, float angle){
-	auto find = cameras.find(id);
-	if(find != cameras.end()){
-		find->second.setViewRotation(angle);	
-	}
-}
-
-void Ogl33RenderWorld::destroyCamera(const RenderCameraId& id){
-	cameras.erase(id);
-}
-
-RenderStageId Ogl33RenderWorld::createStage(const RenderTargetId& id, const RenderSceneId& scene, const RenderCameraId& camera){
-	return 0;
-}
-
-void Ogl33RenderWorld::destroyStage(const RenderStageId& id){
-	render_stages.erase(id);
-}
-
-RenderViewportId Ogl33RenderWorld::createViewport(){
-
-	RenderViewportId id = 0;
-	for(bool found = false; !found; ++id){
-		auto find_free_id = viewports.find(id);
-		if(find_free_id != viewports.end()){
-			found = true;
-		}
-	}
-
-	viewports.insert(std::make_pair(id, Ogl33Viewport{0,0,0,0}));
-
-	return id;
-}
-
-void Ogl33RenderWorld::setViewportRect(const RenderViewportId& id, float x, float y, float width, float height){
-	auto find = viewports.find(id);
-	if(find != viewports.end()){
-		find->second = Ogl33Viewport{x, y, width, height};
-	}
-}
-
-void Ogl33RenderWorld::destroyViewport(const RenderViewportId& id){
-	viewports.erase(id);
-}
-
 RenderTextureId Ogl33RenderTargetStorage::insert(Ogl33RenderTexture&& rt){
 	RenderTargetId id;
 	if(free_ids.empty()){
@@ -362,12 +223,22 @@ RenderWindowId Ogl33RenderTargetStorage::insert(Ogl33Window&& rw){
 void Ogl33RenderTargetStorage::erase(const RenderTargetId& id){
 	auto rt_find = render_textures.find(id);
 	if(rt_find != render_textures.end()){
+		if(( rt_find->first+1) == max_free_id){
+			--max_free_id;
+		}else{
+			free_ids.push(rt_find->first);
+		}
 		render_textures.erase(rt_find);
 		return;
 	}
 
 	auto rw_find = windows.find(id);
 	if(rw_find != windows.end()){
+		if(( rt_find->first+1) == max_free_id){
+			--max_free_id;
+		}else{
+			free_ids.push(rt_find->first);
+		}
 		windows.erase(rw_find);
 	}
 }
@@ -429,6 +300,38 @@ Ogl33RenderTexture* Ogl33RenderTargetStorage::getRenderTexture(const RenderTextu
 	return nullptr;
 }
 
+RenderObjectId Ogl33Scene::createObject(const RenderPropertyId& rp_id){
+	RenderObjectId id = searchForFreeId(objects);
+	objects.insert(std::make_pair(id, RenderObject{rp_id, 0.f, 0.f, 0.f}));
+	return id;
+}
+
+void Ogl33Scene::destroyObject(const RenderObjectId& id){
+	objects.erase(id);
+}
+
+void Ogl33Scene::setObjectPosition(const RenderObjectId& id, float x, float y){
+	auto find = objects.find(id);
+	if(find != objects.end()){
+		find->second.x = x;
+		find->second.y = y;
+	}
+}
+
+void Ogl33Scene::setObjectRotation(const RenderObjectId& id, float angle){
+	auto find = objects.find(id);
+	if(find != objects.end()){
+		find->second.angle = angle;
+	}
+}
+
+Ogl33Render::Ogl33Render(Own<GlContext>&& ctx):
+	context{std::move(ctx)}
+{}
+
+Ogl33Render::~Ogl33Render(){
+}
+
 MeshId Ogl33Render::createMesh(const MeshData& data){
 	std::array<GLuint,3> ids;
 
@@ -451,7 +354,10 @@ MeshId Ogl33Render::createMesh(const MeshData& data){
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 #endif
 
-	return meshes.insert(Ogl33Mesh{std::move(ids)});
+	MeshId m_id = searchForFreeId(meshes);
+
+	meshes.insert(std::make_pair(m_id,Ogl33Mesh{std::move(ids)}));
+	return m_id;
 }
 
 void Ogl33Render::destroyMesh(const MeshId& id){
@@ -463,23 +369,16 @@ TextureId Ogl33Render::createTexture(const Image& image){
 	glGenTextures(1, &texture_id);
 	glBindTexture(GL_TEXTURE_2D, texture_id);
 
-
-
 	glBindTexture(GL_TEXTURE_2D, 0);
+	
+	TextureId t_id = searchForFreeId(textures);
 
-	return textures.insert(Ogl33Texture{texture_id});
+	textures.insert(std::make_pair(t_id, Ogl33Texture{texture_id}));
+	return t_id;
 }
 
 void Ogl33Render::destroyTexture(const TextureId& id){
 	textures.erase(id);
-}
-
-Own<RenderWorld> Ogl33Render::createWorld(){
-	Own<Ogl33RenderWorld> world = heap<Ogl33RenderWorld>(*this);
-
-	render_worlds.insert(world.get());
-
-	return world;
 }
 
 RenderWindowId Ogl33Render::createWindow(const RenderVideoMode& mode, const std::string& title) {
@@ -591,26 +490,119 @@ ProgramId Ogl33Render::createProgram(const std::string& vertex_src, const std::s
 	GLuint mvp_id = glGetUniformLocation(p_id, "mvp");
 	GLuint texture_sampler_id = glGetUniformLocation(p_id, "texture_sampler");
 
-	return programs.insert(Ogl33Program{p_id, texture_sampler_id, mvp_id});
+	ProgramId id = searchForFreeId(programs);
+
+	programs.insert(std::make_pair(id, Ogl33Program{p_id, texture_sampler_id, mvp_id}));
+
+	return id;
 }
 
 void Ogl33Render::destroyProgram(const ProgramId& id){
 	programs.erase(id);
 }
 
-void Ogl33Render::destroyedRenderWorld(Ogl33RenderWorld& rw){
-	render_worlds.erase(&rw);
+RenderCameraId Ogl33Render::createCamera(){
+
+	RenderCameraId id = searchForFreeId(cameras);
+
+	cameras.insert(std::make_pair(id, Ogl33Camera{}));
+	return id;
 }
 
-Ogl33Render::Ogl33Render(Own<GlContext>&& ctx):
-	context{std::move(ctx)}
-{}
-
-Ogl33Render::~Ogl33Render(){
-	assert(render_worlds.empty());
-	for(auto& world : render_worlds){
-		world->destroyedRender();
+void Ogl33Render::setCameraPosition(const RenderCameraId& id, float x, float y){
+	auto find = cameras.find(id);
+	if(find != cameras.end()){
+		find->second.setViewPosition(x,y);
 	}
+}
+
+void Ogl33Render::setCameraRotation(const RenderCameraId& id, float angle){
+	auto find = cameras.find(id);
+	if(find != cameras.end()){
+		find->second.setViewRotation(angle);
+	}
+}
+
+void Ogl33Render::destroyCamera(const RenderCameraId& id){
+	cameras.erase(id);
+}
+
+RenderStageId Ogl33Render::createStage(const RenderTargetId& target_id, const RenderSceneId& scene, const RenderCameraId& cam){
+	
+	RenderStageId id = searchForFreeId(render_stages);
+	render_stages.insert(std::make_pair(id, Ogl33RenderStage{}));
+	return id;
+}
+
+void Ogl33Render::destroyStage(const RenderStageId& id){
+	render_stages.erase(id);
+}
+
+RenderViewportId Ogl33Render::createViewport(){
+	RenderViewportId id = searchForFreeId(viewports);
+	viewports.insert(std::make_pair(id, Ogl33Viewport{0.f,0.f,0.f,0.f}));
+	return id;
+}
+
+void Ogl33Render::setViewportRect(const RenderViewportId& id, float x, float y, float width, float height){
+	auto find = viewports.find(id);
+	if(find != viewports.end()){
+		find->second = Ogl33Viewport{x, y, width, height};
+	}
+}
+
+void Ogl33Render::destroyViewport(const RenderViewportId& id){
+	viewports.erase(id);
+}
+
+RenderPropertyId Ogl33Render::createProperty(const MeshId& mesh, const TextureId& texture){
+	RenderPropertyId id = searchForFreeId(render_properties);
+	render_properties.insert(std::make_pair(id, Ogl33RenderProperty{mesh, texture}));
+	return id;
+}
+
+void Ogl33Render::destroyProperty(const RenderPropertyId& id){
+	render_properties.erase(id);
+}
+
+RenderSceneId Ogl33Render::createScene(){
+	RenderSceneId id = searchForFreeId(scenes);
+	scenes.insert(std::make_pair(id, heap<Ogl33Scene>()));
+	return id;
+}
+
+RenderObjectId Ogl33Render::createObject(const RenderSceneId& scene, const RenderPropertyId& prop){
+	auto find = scenes.find(scene);
+	if(find != scenes.end()){
+		return find->second->createObject(prop);
+	}else{
+		return 0;
+	}
+}
+
+void Ogl33Render::destroyObject(const RenderSceneId& scene, const RenderObjectId& obj){
+	auto find = scenes.find(scene);
+	if(find != scenes.end()){
+		find->second->destroyObject(obj);
+	}
+}
+
+void Ogl33Render::setObjectPosition(const RenderSceneId& scene, const RenderObjectId& obj, float x, float y){
+	auto find = scenes.find(scene);
+	if(find != scenes.end()){
+		find->second->setObjectPosition(obj, x, y);
+	}
+}
+
+void Ogl33Render::setObjectRotation(const RenderSceneId& scene, const RenderObjectId& obj, float angle){
+	auto find = scenes.find(scene);
+	if(find != scenes.end()){
+		find->second->setObjectRotation(obj, angle);
+	}
+}
+
+void Ogl33Render::destroyScene(const RenderSceneId& id){
+	scenes.erase(id);
 }
 
 void Ogl33Render::stepRenderTargetTimes(const std::chrono::steady_clock::time_point& tp){
@@ -656,7 +648,7 @@ void Ogl33Render::step(const std::chrono::steady_clock::time_point& tp){
 }
 }
 
-extern "C" gin::Render* createRenderer(gin::AsyncIoProvider& io_provider){
+extern "C" gin::LowLevelRender* createRenderer(gin::AsyncIoProvider& io_provider){
 	gin::Own<gin::GlContext> context = gin::createGlContext(io_provider, gin::GlSettings{});
 	if(!context){
 		return nullptr;
@@ -666,7 +658,7 @@ extern "C" gin::Render* createRenderer(gin::AsyncIoProvider& io_provider){
 	return new gin::Ogl33Render(std::move(context));
 }
 
-extern "C" void destroyRenderer(gin::Render* render){
+extern "C" void destroyRenderer(gin::LowLevelRender* render){
 	if(!render){
 		return;
 	}

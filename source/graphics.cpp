@@ -8,7 +8,7 @@
 #include <algorithm>
 
 namespace gin {
-RenderPlugins::Plugin::Plugin(DynamicLibrary&& dl, std::function<Render*(AsyncIoProvider&)>&& cr, std::function<void(Render*)>&& dr):
+RenderPlugins::Plugin::Plugin(DynamicLibrary&& dl, std::function<LowLevelRender*(AsyncIoProvider&)>&& cr, std::function<void(LowLevelRender*)>&& dr):
 	handle{std::move(dl)},
 	create_render{std::move(cr)},
 	destroy_render{std::move(dr)}
@@ -43,14 +43,14 @@ RenderPlugins loadAllRenderPluginsIn(const std::filesystem::path& dir){
 			continue;
 		}
 
-		std::function<Render*(AsyncIoProvider&)> create_render = reinterpret_cast<Render*(*)(AsyncIoProvider&)>(lib.value().symbol("createRenderer"));
+		std::function<LowLevelRender*(AsyncIoProvider&)> create_render = reinterpret_cast<LowLevelRender*(*)(AsyncIoProvider&)>(lib.value().symbol("createRenderer"));
 		assert(create_render);
 		if(!create_render){
 			std::cerr<<"Cannot load function create_render"<<std::endl;
 			continue;
 		}
 
-		std::function<void(Render*)> destroy_render = reinterpret_cast<void(*)(Render*)>(lib.value().symbol("destroyRenderer"));
+		std::function<void(LowLevelRender*)> destroy_render = reinterpret_cast<void(*)(LowLevelRender*)>(lib.value().symbol("destroyRenderer"));
 		assert(destroy_render);
 		if(!destroy_render){
 			std::cerr<<"Cannot load function destroy_render"<<std::endl;
@@ -87,7 +87,7 @@ Graphics::~Graphics(){
 	}
 }
 
-Render* Graphics::getRenderer(AsyncIoProvider& provider, const std::string& name){
+LowLevelRender* Graphics::getRenderer(AsyncIoProvider& provider, const std::string& name){
 	auto r_find = renderers.find(name);
 	if(r_find != renderers.end()){
 		return r_find->second.second;
@@ -99,7 +99,7 @@ Render* Graphics::getRenderer(AsyncIoProvider& provider, const std::string& name
 	}
 
 	assert(handle->create_render && handle->destroy_render);
-	Render* render = handle->create_render(provider);
+	LowLevelRender* render = handle->create_render(provider);
 	if(!render){
 		return nullptr;
 	}

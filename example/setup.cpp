@@ -16,7 +16,7 @@ int main() {
 		.detach([](const Error &error) { return error; });
 
 	Graphics graphics{loadAllRenderPluginsIn("./bin/plugins/")};
-	Render *render = graphics.getRenderer(*async.io, "ogl33");
+	LowLevelRender *render = graphics.getRenderer(*async.io, "ogl33");
 	if (!render) {
 		std::cerr << "No ogl33 renderer present" << std::endl;
 		return -1;
@@ -29,25 +29,16 @@ int main() {
 	ProgramId program_id = render->createProgram(default_vertex_shader, default_fragment_shader);
 	MeshId mesh_id = render->createMesh(default_mesh);
 
-	Own<RenderWorld> world = render->createWorld();
-	if(!world){
-		std::cerr<<"Couldn't create RenderWorld"<<std::endl;
-		return -1;
-	}
+	RenderSceneId scene_id = render->createScene();
 
-	Own<RenderScene> scene = world->createScene();
-	if(!scene){
-		std::cerr<<"Couldn't create RenderScene" <<std::endl;
-	}
+	RenderPropertyId rp_id = render->createProperty(mesh_id, 0);
 
-	RenderObjectId ro_id = world->createRenderObject(mesh_id, 0);
+	RenderObjectId ro_id = render->createObject(scene_id, rp_id);
+	render->setObjectPosition(scene_id, ro_id, -0.1f, -0.05f);
 
-	scene->attachObjectToScene(ro_id);
-	scene->setObjectPosition(0.f, 0.f);
+	RenderCameraId camera_id = render->createCamera();
 
-	RenderCameraId camera_id = world->createCamera();
-
-	RenderStageId stage_id = world->createStage(win_id, scene_id, camera_id);
+	RenderStageId stage_id = render->createStage(win_id, scene_id, camera_id);
 
 	render->setWindowVisibility(win_id, true);
 	render->setWindowDesiredFPS(win_id, 10.0f);
@@ -61,11 +52,8 @@ int main() {
 		async.wait_scope.wait(std::chrono::milliseconds{10});
 	}
 
-	scene = nullptr;
-
-	world->destroyRenderObject(ro_id);
-	world = nullptr;
-
+	// Stuff gets cleaned up anyway
+	render->destroyScene(scene_id);
 	render->destroyMesh(mesh_id);
 	render->destroyProgram(program_id);
 

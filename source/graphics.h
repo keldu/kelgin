@@ -21,14 +21,14 @@ class RenderPlugins {
 public:
 	struct Plugin {
 	public:
-		Plugin(DynamicLibrary&&, std::function<Render*(AsyncIoProvider&)>&&, std::function<void(Render*)>&&);
+		Plugin(DynamicLibrary&&, std::function<LowLevelRender*(AsyncIoProvider&)>&&, std::function<void(LowLevelRender*)>&&);
 
 		Plugin(Plugin&&) = default;
 		Plugin& operator=(Plugin&&) = default;
 
 		DynamicLibrary handle;
-		std::function<Render*(AsyncIoProvider&)> create_render;
-		std::function<void(Render*)> destroy_render;
+		std::function<LowLevelRender*(AsyncIoProvider&)> create_render;
+		std::function<void(LowLevelRender*)> destroy_render;
 	};
 private:
 	std::filesystem::path directory;
@@ -58,7 +58,7 @@ RenderPlugins loadAllRenderPluginsIn(const std::filesystem::path& dir);
 class Graphics {
 private:
 	RenderPlugins render_plugins;
-	std::map<std::string, std::pair<RenderPlugins::Plugin*, Render*>> renderers;
+	std::map<std::string, std::pair<RenderPlugins::Plugin*, LowLevelRender*>> renderers;
 public:
 	Graphics(RenderPlugins&& rp);
 	~Graphics();
@@ -73,7 +73,7 @@ public:
 	* @param provider This is a wrapper for listening to outside events
 	* @param name search for the plugin by using the filename part without the extension
 	*/
-	Render* getRenderer(AsyncIoProvider& provider, const std::string& name);
+	LowLevelRender* getRenderer(AsyncIoProvider& provider, const std::string& name);
 };
 
 class GraphicsService final : public Service {

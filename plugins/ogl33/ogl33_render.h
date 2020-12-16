@@ -143,142 +143,6 @@ public:
 	void bind() override;
 };
 
-/// @todo maybe do this with deque?
-/// I need a sorted deque, because i need to check the lowest and the highest elements in
-/// the sorted queue :/
-/// STL doesn't provide this.... Need something like std::priority_deque instead of std::priority_queue
-template<typename I, typename T>
-class Ogl33RenderResourceVector {
-private:
-	struct RefCountedRes {
-		size_t references = 0;
-		T resource;
-	};
-	std::vector<RefCountedRes> resources;
-	std::priority_queue<I, std::vector<I>, std::greater<I>> free_ids;
-public:
-	Ogl33RenderResourceVector(){
-		static_assert(std::is_base_of<Ogl33Resource, T>::value, "Type needs to be a child of Ogl33Resource");
-	}
-
-	I insert(T&& data){
-		I id;
-		if(free_ids.empty()){
-			id = resources.size();
-			resources.push_back({1,std::move(data)});
-		}else{
-			id = free_ids.top();
-			free_ids.pop();
-			if(id < resources.size()){
-				resources[id] = {1,std::move(data)};
-			}else{
-				while(!free_ids.empty()){
-					free_ids.pop();
-				}
-				resources.push_back({1,std::move(data)});
-			}
-
-		}
-
-		return id;
-	}
-
-	void erase(const I& id){
-		/// @unsure Should I handle this differently?
-		assert(id < resources.size());
-		if( (id+1) == resources.size()){
-			resources.pop_back();
-			while(!resources.empty() && resources.back().references == 0){
-				resources.pop_back();
-			}
-			if(free_ids.top() >= resources.size()){
-				while(!free_ids.empty()){
-					free_ids.pop();
-				}
-			}
-		}else{
-			resources[id] = RefCountedRes{0,{}};
-			free_ids.push(id);
-		}
-	}
-
-	T& operator[](const I& id){
-		return resources[id];
-	}
-
-	const T& operator[](const I& id)const{
-		return resources[id];
-	}
-
-	/// @todo implement iterator with find and so on
-};
-
-class Ogl33Render;
-class Ogl33RenderWorld;
-class Ogl33RenderScene final : public RenderScene {
-private:
-	Ogl33RenderWorld* world;
-
-	struct RenderObjectData {
-		float x = 0, y = 0;
-		float angle = 0;
-	};
-
-	std::unordered_map<RenderObjectId, RenderObjectData> ro_data;
-public:
-	Ogl33RenderScene(Ogl33RenderWorld&);
-	~Ogl33RenderScene();
-
-	void destroyedWorld();
-
-	void attachObjectToScene(const RenderObjectId&) override;
-	void detachObjectFromScene(const RenderObjectId&) override;
-	void setObjectPosition(const RenderObjectId&, float, float) override;
-	void setObjectRotation(const RenderObjectId&, float) override;
-};
-
-class Ogl33RenderWorld final : public RenderWorld {
-private:
-	Ogl33Render* renderer;
-
-	std::set<Ogl33RenderScene*> render_scenes;
-
-	struct RenderObjectData {
-		MeshId mesh_id;
-		TextureId texture_id;
-	};
-	std::unordered_map<RenderObjectId, RenderObjectData> objects;
-
-	std::unordered_map<RenderCameraId, Ogl33Camera> cameras;
-
-	std::unordered_map<RenderStageId, Ogl33RenderStage> render_stages;
-
-	std::unordered_map<RenderViewportId, Ogl33Viewport> viewports;
-public:
-	Ogl33RenderWorld(Ogl33Render&);
-	~Ogl33RenderWorld();
-
-	void destroyedRenderScene(Ogl33RenderScene& scene);
-	void destroyedRender();
-
-	RenderObjectId createObject(const MeshId&, const TextureId&) override;
-	void destroyObject(const RenderObjectId&) override;
-
-	Own<RenderScene> createScene() override;
-
-	RenderCameraId createCamera() override;
-	void setCameraPosition(const RenderCameraId&, float x, float y) override;
-	void setCameraRotation(const RenderCameraId&, float angle) override;
-	void destroyCamera(const RenderCameraId&) override;
-
-	RenderStageId createStage(const RenderTargetId& id, const RenderSceneId&, const RenderCameraId&) override;
-	void destroyStage(const RenderStageId&) override;
-
-	RenderViewportId createViewport() override;
-	void setViewportRect(const RenderViewportId&, float, float, float, float) override;
-	void destroyViewport(const RenderViewportId&) override;
-};
-
 /// @todo this storage kinda feels hacky
 /// An idea would be to use evenly numbered IDs for RenderWindows
 /// and odd numbered IDs for RenderTextures
@@ -287,7 +151,7 @@ private:
 	std::map<RenderTargetId, Ogl33RenderTexture> render_textures;
 	std::map<RenderTargetId, Ogl33Window> windows;
 
-	RenderTargetId max_free_id = 0;
+	RenderTargetId max_free_id = 1;
 	std::priority_queue<RenderTargetId, std::vector<RenderTargetId>, std::greater<RenderTargetId>> free_ids;
 public:
 	RenderTextureId insert(Ogl33RenderTexture&& render_texture);
@@ -302,17 +166,43 @@ public:
 	Ogl33RenderTexture* getRenderTexture(const RenderTextureId&);
 };
 
-class Ogl33Render final : public Render {
+struct Ogl33RenderProperty {
+	MeshId mesh_id;
+	TextureId texture_id;
+};
+
+class Ogl33Scene {
+private:
+	struct RenderObject {
+		RenderPropertyId id;
+		float x;
+		float y;
+		float angle;
+	};
+
+	std::unordered_map<RenderObjectId, RenderObject> objects;
+public:
+
+	RenderObjectId createObject(const RenderPropertyId&);
+	void destroyObject(const RenderObjectId&);
+	void setObjectPosition(const RenderObjectId&, float, float);
+	void setObjectRotation(const RenderObjectId&, float);
+};
+
+class Ogl33Render final : public LowLevelRender {
 private:
 	Own<GlContext> context;
 
 	Ogl33RenderTargetStorage render_targets;
 
-	Ogl33RenderResourceVector<MeshId, Ogl33Mesh> meshes;
-	Ogl33RenderResourceVector<TextureId, Ogl33Texture> textures;
-	Ogl33RenderResourceVector<ProgramId, Ogl33Program> programs;
-
-	std::set<Ogl33RenderWorld*> render_worlds;
+	std::unordered_map<MeshId, Ogl33Mesh> meshes;
+	std::unordered_map<TextureId, Ogl33Texture> textures;
+	std::unordered_map<ProgramId, Ogl33Program> programs;
+	std::unordered_map<RenderCameraId, Ogl33Camera> cameras;
+	std::unordered_map<RenderStageId, Ogl33RenderStage> render_stages;
+	std::unordered_map<RenderViewportId, Ogl33Viewport> viewports;
+	std::unordered_map<RenderPropertyId, Ogl33RenderProperty> render_properties;
+	std::unordered_map<RenderSceneId, Own<Ogl33Scene>> scenes;
 
 	struct RenderTargetUpdate {
 		std::chrono::steady_clock::duration seconds_per_frame;
@@ -327,26 +217,43 @@ public:
 	Ogl33Render(Own<GlContext>&&);
 	~Ogl33Render();
 
-	void destroyedRenderWorld(Ogl33RenderWorld& rw);
-
 	MeshId createMesh(const MeshData&) override;
 	void destroyMesh(const MeshId&) override;
 
 	TextureId createTexture(const Image&) override;
 	void destroyTexture(const TextureId&) override;
 
-	Own<RenderWorld> createWorld() override;
-
-	RenderWindowId createWindow(const RenderVideoMode&, const std::string&) override;
+	RenderWindowId createWindow(const RenderVideoMode&, const std::string& title) override;
 	void setWindowDesiredFPS(const RenderWindowId&, float fps) override;
+	void setWindowVisibility(const RenderWindowId& id, bool show) override;
 	void destroyWindow(const RenderWindowId& id) override;
 
 	ProgramId createProgram(const std::string& vertex_src, const std::string& fragment_src) override;
 	void destroyProgram(const ProgramId&) override;
 
-	void setWindowVisibility(const RenderWindowId& id, bool show) override;
+	RenderCameraId createCamera() override;
+	void setCameraPosition(const RenderCameraId&, float x, float y) override;
+	void setCameraRotation(const RenderCameraId&, float alpha) override;
+	void destroyCamera(const RenderCameraId&) override;
 
-	void flush() override;
+	RenderStageId createStage(const RenderTargetId& id, const RenderSceneId&, const RenderCameraId&) override;
+	void destroyStage(const RenderStageId&) override;
+
+	RenderViewportId createViewport() override;
+	void setViewportRect(const RenderViewportId&, float, float, float, float) override;
+	void destroyViewport(const RenderViewportId&) override;
+
+	RenderPropertyId createProperty(const MeshId&, const TextureId&) override;
+	void destroyProperty(const RenderPropertyId&) override;
+
+	RenderSceneId createScene() override;
+	RenderObjectId createObject(const RenderSceneId&, const RenderPropertyId&) override;
+	void destroyObject(const RenderSceneId&, const RenderObjectId&) override;
+	void setObjectPosition(const RenderSceneId&, const RenderObjectId&, float, float) override;
+	void setObjectRotation(const RenderSceneId&, const RenderObjectId&, float) override;
+	void destroyScene(const RenderSceneId&) override;
+
 	void step(const std::chrono::steady_clock::time_point&) override;
+	void flush() override;
 };
 }
