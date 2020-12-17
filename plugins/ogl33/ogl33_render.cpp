@@ -22,6 +22,12 @@ Id searchForFreeId(std::unordered_map<Id, T>& map){
 }
 }
 
+void Ogl33RenderStage::render(Ogl33Render& render){
+	std::set<RenderObject*> draw_queue;
+
+
+}
+
 Ogl33Camera::Ogl33Camera()
 {
 	for(size_t i = 0; i < 3; ++i){
@@ -530,12 +536,25 @@ void Ogl33Render::destroyCamera(const RenderCameraId& id){
 RenderStageId Ogl33Render::createStage(const RenderTargetId& target_id, const RenderSceneId& scene, const RenderCameraId& cam){
 	
 	RenderStageId id = searchForFreeId(render_stages);
-	render_stages.insert(std::make_pair(id, Ogl33RenderStage{}));
+	render_stages.insert(std::make_pair(id, Ogl33RenderStage{target_id, scene, cam}));
+	render_target_stages.insert(std::make_pair(target_id, id));
 	return id;
 }
 
 void Ogl33Render::destroyStage(const RenderStageId& id){
-	render_stages.erase(id);
+	auto find = render_stages.find(id);
+	if(find != render_stages.end()){
+		auto range = render_target_stages.equal_range(find->second.target_id);
+		for(auto iter = range.first; iter != range.second; ){
+			if(iter->second == id){
+				iter = render_target_stages.erase(iter);
+			}else{
+				++iter;
+			}
+		}
+
+		render_stages.erase(find);
+	}
 }
 
 RenderViewportId Ogl33Render::createViewport(){
@@ -642,6 +661,17 @@ void Ogl33Render::step(const std::chrono::steady_clock::time_point& tp){
 		}
 
 		target->beginRender();
+
+		auto range = render_target_stages.find(front);
+		for(auto iter = range.first; iter != range.second; ++iter){
+			auto stage_iter = render_stages.find(iter->second);
+			if(stage_iter != render_stages.end()){
+				auto scene_iter = scenes.find(stage_iter->second.scene_id);
+				auto camera_iter = cameras.find(stage_iter->second.camera_id);
+				
+
+			}
+		}
 
 		target->endRender();
 	}

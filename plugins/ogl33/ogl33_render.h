@@ -27,9 +27,14 @@ class Ogl33Resource {
 protected:
 public:
 };
-
+class Ogl33Render;
 class Ogl33RenderStage {
+public:
+	RenderTargetId target_id;
+	RenderSceneId scene_id;
+	RenderCameraId camera_id;
 
+	void render(Ogl33Render& render);
 };
 
 class Ogl33Camera {
@@ -172,14 +177,14 @@ struct Ogl33RenderProperty {
 };
 
 class Ogl33Scene {
-private:
+public:
 	struct RenderObject {
 		RenderPropertyId id;
 		float x;
 		float y;
 		float angle;
 	};
-
+private:
 	std::unordered_map<RenderObjectId, RenderObject> objects;
 public:
 
@@ -187,6 +192,8 @@ public:
 	void destroyObject(const RenderObjectId&);
 	void setObjectPosition(const RenderObjectId&, float, float);
 	void setObjectRotation(const RenderObjectId&, float);
+
+	void visit(const Ogl33Camera&, std::set<RenderObject*>&);
 };
 
 class Ogl33Render final : public LowLevelRender {
@@ -203,6 +210,8 @@ private:
 	std::unordered_map<RenderViewportId, Ogl33Viewport> viewports;
 	std::unordered_map<RenderPropertyId, Ogl33RenderProperty> render_properties;
 	std::unordered_map<RenderSceneId, Own<Ogl33Scene>> scenes;
+
+	std::unordered_multimap<RenderTargetId, RenderStageId> render_target_stages;
 
 	struct RenderTargetUpdate {
 		std::chrono::steady_clock::duration seconds_per_frame;
