@@ -28,14 +28,8 @@ protected:
 public:
 };
 class Ogl33Render;
-class Ogl33RenderStage {
-public:
-	RenderTargetId target_id;
-	RenderSceneId scene_id;
-	RenderCameraId camera_id;
-
-	void render(Ogl33Render& render);
-};
+class Ogl33RenderProperty;
+class Ogl33RenderObject;
 
 class Ogl33Camera {
 private:
@@ -70,6 +64,10 @@ public:
 	Ogl33Mesh();
 	Ogl33Mesh(std::array<GLuint,3>&&);
 	~Ogl33Mesh();
+
+	void bindVertex() const;
+	void bindUV() const;
+	void bindIndex() const;
 };
 
 class Ogl33Texture final : public Ogl33Resource {
@@ -193,12 +191,25 @@ public:
 	void setObjectPosition(const RenderObjectId&, float, float);
 	void setObjectRotation(const RenderObjectId&, float);
 
-	void visit(const Ogl33Camera&, std::set<RenderObject*>&);
+	void visit(const Ogl33Camera&, std::vector<RenderObject*>&);
+};
+
+class Ogl33RenderStage {
+private:
+	void renderOne(Ogl33Program& program, Ogl33RenderProperty& property, Ogl33Scene::RenderObject& object, Ogl33Mesh& mesh, Matrix<float, 3, 3>& vp);
+public:
+	RenderTargetId target_id;
+	RenderSceneId scene_id;
+	RenderCameraId camera_id;
+	ProgramId program_id;
+
+	void render(Ogl33Render& render);
 };
 
 class Ogl33Render final : public LowLevelRender {
 private:
 	Own<GlContext> context;
+	GLuint vao;
 
 	Ogl33RenderTargetStorage render_targets;
 
@@ -226,6 +237,12 @@ public:
 	Ogl33Render(Own<GlContext>&&);
 	~Ogl33Render();
 
+	Ogl33Scene* getScene(const RenderSceneId&);
+	Ogl33Camera* getCamera(const RenderCameraId&);
+	Ogl33Program* getProgram(const ProgramId&);
+	Ogl33RenderProperty* getProperty(const RenderPropertyId&);
+	Ogl33Mesh* getMesh(const MeshId&);
+
 	MeshId createMesh(const MeshData&) override;
 	void destroyMesh(const MeshId&) override;
 
@@ -245,7 +262,7 @@ public:
 	void setCameraRotation(const RenderCameraId&, float alpha) override;
 	void destroyCamera(const RenderCameraId&) override;
 
-	RenderStageId createStage(const RenderTargetId& id, const RenderSceneId&, const RenderCameraId&) override;
+	RenderStageId createStage(const RenderTargetId& id, const RenderSceneId&, const RenderCameraId&, const ProgramId&) override;
 	void destroyStage(const RenderStageId&) override;
 
 	RenderViewportId createViewport() override;

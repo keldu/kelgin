@@ -28,7 +28,7 @@ class MeshData {
 public:
 	std::vector<float> vertices;
 	std::vector<float> uvs;
-	std::vector<int> indices;
+	std::vector<unsigned int> indices;
 };
 
 class Image {
@@ -81,7 +81,7 @@ public:
 	virtual void setCameraRotation(const RenderCameraId&, float alpha) = 0;
 	virtual void destroyCamera(const RenderCameraId&) = 0;
 
-	virtual RenderStageId createStage(const RenderTargetId& id, const RenderSceneId&, const RenderCameraId&) = 0;
+	virtual RenderStageId createStage(const RenderTargetId& id, const RenderSceneId&, const RenderCameraId&, const ProgramId&) = 0;
 	virtual void destroyStage(const RenderStageId&) = 0;
 
 	virtual RenderViewportId createViewport() = 0;

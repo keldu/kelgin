@@ -38,7 +38,7 @@ int main() {
 
 	RenderCameraId camera_id = render->createCamera();
 
-	RenderStageId stage_id = render->createStage(win_id, scene_id, camera_id);
+	RenderStageId stage_id = render->createStage(program_id, win_id, scene_id, camera_id);
 
 	render->setWindowVisibility(win_id, true);
 	render->setWindowDesiredFPS(win_id, 10.0f);

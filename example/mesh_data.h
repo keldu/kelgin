@@ -12,7 +12,7 @@ const gin::MeshData default_mesh = {
 		1.f, 0.f, 1.f, 1.f
 	},
 	{
-		1, 2, 3,
-		1, 3, 4
+		0, 1, 2,
+		0, 2, 3
 	}
 };

@@ -12,20 +12,14 @@ namespace {
 template<typename Id, typename T>
 Id searchForFreeId(std::unordered_map<Id, T>& map){
 	Id id = 1;
-	for(bool found = false; !found; ++id){
+	for(; true; ++id){
 		auto find = map.find(id);
 		if(find == map.end()){
-			found = true;
+			return id;
 		}
 	}
 	return id;
 }
-}
-
-void Ogl33RenderStage::render(Ogl33Render& render){
-	std::set<RenderObject*> draw_queue;
-
-
 }
 
 Ogl33Camera::Ogl33Camera()
@@ -80,6 +74,18 @@ Ogl33Mesh::~Ogl33Mesh(){
 	glDeleteBuffers(3, &ids[0]);
 }
 
+void Ogl33Mesh::bindVertex() const{
+	glBindBuffer(GL_ARRAY_BUFFER, ids[0]);
+}
+
+void Ogl33Mesh::bindUV() const{
+	glBindBuffer(GL_ARRAY_BUFFER, ids[1]);
+}
+
+void Ogl33Mesh::bindIndex() const{
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ids[2]);
+}
+
 Ogl33Texture::Ogl33Texture():
 	Ogl33Texture(0)
 {}
@@ -117,10 +123,14 @@ void Ogl33Program::setMvp(const Matrix<float,3,3>& mvp){
 
 void Ogl33Program::setMesh(const Ogl33Mesh& mesh){
 	glEnableVertexAttribArray(0);
+	mesh.bindVertex();
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, static_cast<void *>(0));
 
 	glEnableVertexAttribArray(1);
+	mesh.bindUV();
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, static_cast<void *>(0));
+
+	mesh.bindIndex();
 }
 
 void Ogl33Program::use(){
@@ -148,7 +158,6 @@ void Ogl33Window::hide(){
 		window->hide();
 	}
 }
-
 
 void Ogl33Window::beginRender(){
 	assert(window);
@@ -331,11 +340,115 @@ void Ogl33Scene::setObjectRotation(const RenderObjectId& id, float angle){
 	}
 }
 
+/**
+* @todo design better interface and check occlusion
+*/
+void Ogl33Scene::visit(const Ogl33Camera&, std::vector<RenderObject*>& render_queue){
+	render_queue.reserve(objects.size());
+	for(auto& iter: objects){
+		render_queue.push_back(&iter.second);
+	}
+}
+
+void Ogl33RenderStage::renderOne(Ogl33Program& program, Ogl33RenderProperty& property, Ogl33Scene::RenderObject& object, Ogl33Mesh& mesh, Matrix<float, 3, 3>& vp){
+	program.setMesh(mesh);
+
+	program.setMvp(vp);
+
+	program.setTexture(Ogl33Texture{0});
+
+	std::cout<<"!"<<std::endl;
+
+	//glDrawArrays(GL_TRIANGLES, 0, 3);
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+}
+
+void Ogl33RenderStage::render(Ogl33Render& render){
+	std::vector<Ogl33Scene::RenderObject*> draw_queue;
+
+	Ogl33Scene* scene = render.getScene(scene_id);
+	if(!scene){
+		return;
+	}
+	Ogl33Camera* camera = render.getCamera(camera_id);
+	if(!camera){
+		return;
+	}
+	Ogl33Program* program = render.getProgram(program_id);
+	if(!program){
+		return;
+	}
+
+	scene->visit(*camera, draw_queue);
+
+	program->use();
+	glViewport(0,0,600,400);
+
+	auto vp = camera->view();
+
+	for(auto& iter : draw_queue){
+		Ogl33RenderProperty* property = render.getProperty(iter->id);
+		if(!property){
+			continue;
+		}
+		Ogl33Mesh* mesh = render.getMesh(property->mesh_id);
+		if(!mesh){
+			continue;
+		}
+		
+		renderOne(*program, *property, *iter, *mesh, vp);		
+	}
+}
+
 Ogl33Render::Ogl33Render(Own<GlContext>&& ctx):
 	context{std::move(ctx)}
-{}
+{
+	context->bind();
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
+}
 
 Ogl33Render::~Ogl33Render(){
+}
+
+Ogl33Scene* Ogl33Render::getScene(const RenderSceneId& id){
+	auto iter = scenes.find(id);
+	if(iter != scenes.end()){
+		return iter->second.get();
+	}
+	return nullptr;
+}
+
+Ogl33Camera* Ogl33Render::getCamera(const RenderCameraId& id){
+	auto iter = cameras.find(id);
+	if(iter != cameras.end()){
+		return &iter->second;
+	}
+	return nullptr;
+}
+
+Ogl33Program* Ogl33Render::getProgram(const ProgramId& id){
+	auto iter = programs.find(id);
+	if(iter != programs.end()){
+		return &iter->second;
+	}
+	return nullptr;
+}
+
+Ogl33RenderProperty* Ogl33Render::getProperty(const RenderPropertyId& id){
+	auto iter = render_properties.find(id);
+	if(iter != render_properties.end()){
+		return &iter->second;
+	}
+	return nullptr;
+}
+
+Ogl33Mesh* Ogl33Render::getMesh(const MeshId& id){
+	auto iter = meshes.find(id);
+	if(iter != meshes.end()){
+		return &iter->second;
+	}
+	return nullptr;
 }
 
 MeshId Ogl33Render::createMesh(const MeshData& data){
@@ -533,10 +646,11 @@ void Ogl33Render::destroyCamera(const RenderCameraId& id){
 	cameras.erase(id);
 }
 
-RenderStageId Ogl33Render::createStage(const RenderTargetId& target_id, const RenderSceneId& scene, const RenderCameraId& cam){
+RenderStageId Ogl33Render::createStage(const RenderTargetId& target_id, const RenderSceneId& scene, const RenderCameraId& cam, const ProgramId& program_id){
 	
 	RenderStageId id = searchForFreeId(render_stages);
-	render_stages.insert(std::make_pair(id, Ogl33RenderStage{target_id, scene, cam}));
+	render_stages.insert(std::make_pair(id, Ogl33RenderStage{target_id, scene, cam, program_id}));
+	
 	render_target_stages.insert(std::make_pair(target_id, id));
 	return id;
 }
@@ -660,16 +774,15 @@ void Ogl33Render::step(const std::chrono::steady_clock::time_point& tp){
 			continue;
 		}
 
+		glBindVertexArray(vao);
 		target->beginRender();
+		glBindVertexArray(vao);
 
-		auto range = render_target_stages.find(front);
+		auto range = render_target_stages.equal_range(front);
 		for(auto iter = range.first; iter != range.second; ++iter){
 			auto stage_iter = render_stages.find(iter->second);
 			if(stage_iter != render_stages.end()){
-				auto scene_iter = scenes.find(stage_iter->second.scene_id);
-				auto camera_iter = cameras.find(stage_iter->second.camera_id);
-				
-
+				stage_iter->second.render(*this);
 			}
 		}
 
