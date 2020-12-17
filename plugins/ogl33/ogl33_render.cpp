@@ -71,7 +71,15 @@ Ogl33Mesh::Ogl33Mesh(std::array<GLuint, 3>&& i):
 {}
 
 Ogl33Mesh::~Ogl33Mesh(){
-	glDeleteBuffers(3, &ids[0]);
+	if(ids[0] > 0){
+		glDeleteBuffers(3, &ids[0]);
+	}
+}
+
+Ogl33Mesh::Ogl33Mesh(Ogl33Mesh&& rhs):
+	ids{std::move(rhs.ids)}
+{
+	rhs.ids = {0,0,0};
 }
 
 void Ogl33Mesh::bindVertex() const{
@@ -95,24 +103,52 @@ Ogl33Texture::Ogl33Texture(GLuint tex_id):
 {}
 
 Ogl33Texture::~Ogl33Texture(){
-	glDeleteTextures(1, &tex_id);
+	if(tex_id > 0){
+		glDeleteTextures(1, &tex_id);
+	}
+}
+
+Ogl33Texture::Ogl33Texture(Ogl33Texture&& rhs):
+	tex_id{rhs.tex_id}
+{
+	rhs.tex_id = 0;
+}
+
+void Ogl33Texture::bind() const{
+	glBindTexture(GL_TEXTURE_2D, tex_id);
 }
 
 Ogl33Program::Ogl33Program(GLuint p_id, GLuint tex_id, GLuint mvp_id):
 	program_id{p_id},
 	texture_uniform{tex_id},
 	mvp_uniform{mvp_id}
-{}
+{
+	std::cout<<"Program: "<<program_id<<" "<<texture_uniform<<" "<<mvp_uniform<<std::endl;
+}
 
 Ogl33Program::Ogl33Program():
 	Ogl33Program(0,0,0)
 {}
 
 Ogl33Program::~Ogl33Program(){
-	glDeleteProgram(program_id);
+	if(program_id > 0){
+		std::cout<<"Program: "<<program_id<<std::endl;
+		glDeleteProgram(program_id);
+	}
+}
+
+Ogl33Program::Ogl33Program(Ogl33Program&& rhs):
+	program_id{rhs.program_id},
+	texture_uniform{rhs.texture_uniform},
+	mvp_uniform{rhs.mvp_uniform}
+{
+	rhs.program_id = 0;
+	rhs.texture_uniform = 0;
+	rhs.mvp_uniform = 0;
 }
 
 void Ogl33Program::setTexture(const Ogl33Texture& tex){
+	tex.bind();
 	glUniform1i(texture_uniform, 0);
 	glActiveTexture(GL_TEXTURE0);
 }
@@ -352,15 +388,12 @@ void Ogl33Scene::visit(const Ogl33Camera&, std::vector<RenderObject*>& render_qu
 
 void Ogl33RenderStage::renderOne(Ogl33Program& program, Ogl33RenderProperty& property, Ogl33Scene::RenderObject& object, Ogl33Mesh& mesh, Matrix<float, 3, 3>& vp){
 	program.setMesh(mesh);
+	//program.setTexture(Ogl33Texture{0});
+	Matrix<float, 3, 3> identity;
+	program.setMvp(identity);
 
-	program.setMvp(vp);
-
-	program.setTexture(Ogl33Texture{0});
-
-	std::cout<<"!"<<std::endl;
-
-	//glDrawArrays(GL_TRIANGLES, 0, 3);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
+	//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0L);
 }
 
 void Ogl33RenderStage::render(Ogl33Render& render){
@@ -382,10 +415,10 @@ void Ogl33RenderStage::render(Ogl33Render& render){
 	scene->visit(*camera, draw_queue);
 
 	program->use();
-	glViewport(0,0,600,400);
 
 	auto vp = camera->view();
 
+	glViewport(0,0,600,400);
 	for(auto& iter : draw_queue){
 		Ogl33RenderProperty* property = render.getProperty(iter->id);
 		if(!property){
@@ -409,6 +442,8 @@ Ogl33Render::Ogl33Render(Own<GlContext>&& ctx):
 }
 
 Ogl33Render::~Ogl33Render(){
+	context->bind();
+	glDeleteVertexArrays(1,&vao);
 }
 
 Ogl33Scene* Ogl33Render::getScene(const RenderSceneId& id){
@@ -601,12 +636,26 @@ ProgramId Ogl33Render::createProgram(const std::string& vertex_src, const std::s
 	glAttachShader(p_id, vertex_shader_id);
 	glAttachShader(p_id, fragment_shader_id);
 	glLinkProgram(p_id);
+
+	GLint result = GL_FALSE;
+	int info_length;
+	glGetProgramiv(p_id, GL_LINK_STATUS, &result);
+	glGetProgramiv(p_id, GL_INFO_LOG_LENGTH, &info_length);
+	if (info_length > 1 || result == GL_FALSE) {
+		std::string error_msg;
+		error_msg.resize(info_length);
+		glGetProgramInfoLog(p_id, info_length, nullptr, &error_msg[0]);
+
+		std::cerr<<"Failed to link "<<error_msg<<std::endl;
+		// log_error(std::string{"Failed to compile "} + error_msg);
+	}
+
 	glDetachShader(p_id, vertex_shader_id);
 	glDetachShader(p_id, fragment_shader_id);
 	glDeleteShader(vertex_shader_id);
 	glDeleteShader(fragment_shader_id);
 
-	GLuint mvp_id = glGetUniformLocation(p_id, "mvp");
+	GLuint mvp_id = glGetUniformLocation(p_id, "model_view_projection");
 	GLuint texture_sampler_id = glGetUniformLocation(p_id, "texture_sampler");
 
 	ProgramId id = searchForFreeId(programs);
@@ -758,6 +807,8 @@ void Ogl33Render::flush(){
 }
 
 void Ogl33Render::step(const std::chrono::steady_clock::time_point& tp){
+
+
 	assert(context);
 	if(!context){
 		return;
@@ -774,9 +825,7 @@ void Ogl33Render::step(const std::chrono::steady_clock::time_point& tp){
 			continue;
 		}
 
-		glBindVertexArray(vao);
 		target->beginRender();
-		glBindVertexArray(vao);
 
 		auto range = render_target_stages.equal_range(front);
 		for(auto iter = range.first; iter != range.second; ++iter){

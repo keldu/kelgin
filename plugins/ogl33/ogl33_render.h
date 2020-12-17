@@ -64,6 +64,7 @@ public:
 	Ogl33Mesh();
 	Ogl33Mesh(std::array<GLuint,3>&&);
 	~Ogl33Mesh();
+	Ogl33Mesh(Ogl33Mesh&&);
 
 	void bindVertex() const;
 	void bindUV() const;
@@ -77,6 +78,9 @@ public:
 	Ogl33Texture();
 	Ogl33Texture(GLuint tex_id);
 	~Ogl33Texture();
+	Ogl33Texture(Ogl33Texture&&);
+
+	void bind() const;
 };
 
 class Ogl33Program final : public Ogl33Resource {
@@ -89,6 +93,8 @@ public:
 	Ogl33Program();
 	Ogl33Program(GLuint, GLuint, GLuint);
 	~Ogl33Program();
+
+	Ogl33Program(Ogl33Program&&);
 
 	void setTexture(const Ogl33Texture&);
 	void setMvp(const Matrix<float,3,3>&);
