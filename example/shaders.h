@@ -14,7 +14,7 @@ uniform mat3 model_view_projection;
 void main(){
 	vec3 transformed = model_view_projection * vec3(vertices, 1.0);
 	// vec3 transformed = vec3(vertices, 1.0);
-	gl_Position = vec4(transformed.x, transformed.y, 0.5, transformed.z);
+	gl_Position = vec4(transformed.x, transformed.y, -1.0, transformed.z);
 	tex_coord = uvs;
 }
 )";
@@ -23,12 +23,12 @@ const std::string default_fragment_shader = R"(#version 330 core
 
 in vec2 tex_coord;
 
-out vec3 color;
+out vec4 frag_colour;
 
 uniform sampler2D texture_sampler;
 
 void main(){
 	// vec4 tex_colour = texture(texture_sampler, tex_coord);
-	color = vec3(1.0, 1.0, 0.0);
+	frag_colour = vec4(1.0, 0.0, 0.0, 0.5);
 }
 )";

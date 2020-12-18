@@ -123,7 +123,6 @@ Ogl33Program::Ogl33Program(GLuint p_id, GLuint tex_id, GLuint mvp_id):
 	texture_uniform{tex_id},
 	mvp_uniform{mvp_id}
 {
-	std::cout<<"Program: "<<program_id<<" "<<texture_uniform<<" "<<mvp_uniform<<std::endl;
 }
 
 Ogl33Program::Ogl33Program():
@@ -132,7 +131,6 @@ Ogl33Program::Ogl33Program():
 
 Ogl33Program::~Ogl33Program(){
 	if(program_id > 0){
-		std::cout<<"Program: "<<program_id<<std::endl;
 		glDeleteProgram(program_id);
 	}
 }
@@ -158,13 +156,13 @@ void Ogl33Program::setMvp(const Matrix<float,3,3>& mvp){
 }
 
 void Ogl33Program::setMesh(const Ogl33Mesh& mesh){
-	glEnableVertexAttribArray(0);
 	mesh.bindVertex();
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, static_cast<void *>(0));
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2*sizeof(float), static_cast<void *>(0));
 
-	glEnableVertexAttribArray(1);
 	mesh.bindUV();
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, static_cast<void *>(0));
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2*sizeof(float), static_cast<void *>(0));
 
 	mesh.bindIndex();
 }
@@ -392,8 +390,7 @@ void Ogl33RenderStage::renderOne(Ogl33Program& program, Ogl33RenderProperty& pro
 	Matrix<float, 3, 3> identity;
 	program.setMvp(identity);
 
-	glDrawArrays(GL_TRIANGLES, 0, 3);
-	//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0L);
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0L);
 }
 
 void Ogl33RenderStage::render(Ogl33Render& render){
@@ -437,7 +434,7 @@ Ogl33Render::Ogl33Render(Own<GlContext>&& ctx):
 	context{std::move(ctx)}
 {
 	context->bind();
-	glGenVertexArrays(1, &vao);
+	glGenVertexArrays(1,&vao);
 	glBindVertexArray(vao);
 }
 

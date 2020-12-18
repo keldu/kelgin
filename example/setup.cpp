@@ -28,7 +28,7 @@ int main() {
 	render->flush();
 
 	ProgramId program_id = render->createProgram(default_vertex_shader, default_fragment_shader);
-	MeshId mesh_id = render->createMesh(array_mesh);
+	MeshId mesh_id = render->createMesh(default_mesh);
 	TextureId texture_id = render->createTexture(default_image);
 
 	RenderSceneId scene_id = render->createScene();
@@ -36,7 +36,6 @@ int main() {
 	RenderPropertyId rp_id = render->createProperty(mesh_id, texture_id);
 
 	RenderObjectId ro_id = render->createObject(scene_id, rp_id);
-	render->setObjectPosition(scene_id, ro_id, -0.0f, -0.0f);
 
 	RenderCameraId camera_id = render->createCamera();
 
