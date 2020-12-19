@@ -15,6 +15,7 @@ ogl33_env.Append(LIBS=['kelgin-window','GL'])
 dir_path = Dir('.').abspath
 
 ogl33_env.sources = sorted(glob.glob(dir_path + "/*.cpp"))
+ogl33_env.sources += ['glad.c']
 ogl33_env.headers = sorted(glob.glob(dir_path + "/*.h"))
 
 ogl33_env.objects = []

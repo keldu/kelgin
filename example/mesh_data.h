@@ -17,6 +17,6 @@ const gin::MeshData default_mesh = {
 	},
 	{
 		0, 1, 2,
-		2, 1, 3
+		2, 0, 3
 	}
 };

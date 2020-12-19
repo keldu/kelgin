@@ -107,7 +107,7 @@ class Ogl33RenderTarget {
 protected:
 	~Ogl33RenderTarget() = default;
 
-	std::array<float, 4> clear_colour = {0.f, 0.f, 0.f, 1.f};
+	std::array<float, 4> clear_colour = {0.f, 0.f, 0.f, 0.f};
 public:
 	virtual void beginRender() = 0;
 	virtual void endRender() = 0;
@@ -215,9 +215,10 @@ public:
 class Ogl33Render final : public LowLevelRender {
 private:
 	Own<GlContext> context;
-	GLuint vao;
 
 	Ogl33RenderTargetStorage render_targets;
+	bool loaded_glad = false;
+	GLuint vao = 0;
 
 	std::unordered_map<MeshId, Ogl33Mesh> meshes;
 	std::unordered_map<TextureId, Ogl33Texture> textures;

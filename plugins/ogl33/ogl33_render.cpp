@@ -156,13 +156,13 @@ void Ogl33Program::setMvp(const Matrix<float,3,3>& mvp){
 }
 
 void Ogl33Program::setMesh(const Ogl33Mesh& mesh){
-	mesh.bindVertex();
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2*sizeof(float), static_cast<void *>(0));
+	mesh.bindVertex();
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, static_cast<void *>(0));
 
-	mesh.bindUV();
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2*sizeof(float), static_cast<void *>(0));
+	mesh.bindUV();
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, static_cast<void *>(0));
 
 	mesh.bindIndex();
 }
@@ -199,9 +199,10 @@ void Ogl33Window::beginRender(){
 		return;
 	}
 	window->bind();
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	/// @undo comment
+	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClearColor(clear_colour[0], clear_colour[1], clear_colour[2], clear_colour[3]);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT /*| GL_DEPTH_BUFFER_BIT*/);
 }
 
 void Ogl33Window::endRender(){
@@ -433,14 +434,12 @@ void Ogl33RenderStage::render(Ogl33Render& render){
 Ogl33Render::Ogl33Render(Own<GlContext>&& ctx):
 	context{std::move(ctx)}
 {
-	context->bind();
-	glGenVertexArrays(1,&vao);
-	glBindVertexArray(vao);
 }
 
 Ogl33Render::~Ogl33Render(){
-	context->bind();
-	glDeleteVertexArrays(1,&vao);
+	if(loaded_glad && vao > 0){
+		glDeleteVertexArrays(1,&vao);
+	}
 }
 
 Ogl33Scene* Ogl33Render::getScene(const RenderSceneId& id){
@@ -539,6 +538,15 @@ RenderWindowId Ogl33Render::createWindow(const RenderVideoMode& mode, const std:
 	}
 
 	gl_win->bind();
+	if(!loaded_glad){
+		if(!gladLoadGL()){
+			std::cout<<"Failed to load glad"<<std::endl;
+			return 0;
+		}
+		glGenVertexArrays(1,&vao);
+		glBindVertexArray(vao);
+		loaded_glad = true;
+	}
 
 	return render_targets.insert(Ogl33Window{std::move(gl_win)});
 }
@@ -645,6 +653,10 @@ ProgramId Ogl33Render::createProgram(const std::string& vertex_src, const std::s
 
 		std::cerr<<"Failed to link "<<error_msg<<std::endl;
 		// log_error(std::string{"Failed to compile "} + error_msg);
+		
+		
+
+		return 0;
 	}
 
 	glDetachShader(p_id, vertex_shader_id);
@@ -842,6 +854,13 @@ extern "C" gin::LowLevelRender* createRenderer(gin::AsyncIoProvider& io_provider
 	if(!context){
 		return nullptr;
 	}
+	
+	/*
+	if(!gladLoadGL()){
+		std::cout<<"Failed to load glad"<<std::endl;
+		return nullptr;
+	}
+	*/
 
 	std::cout<<"Creating ogl33 plugin"<<std::endl;
 	return new gin::Ogl33Render(std::move(context));
