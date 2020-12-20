@@ -147,8 +147,6 @@ Ogl33Program::Ogl33Program(Ogl33Program&& rhs):
 
 void Ogl33Program::setTexture(const Ogl33Texture& tex){
 	tex.bind();
-	glUniform1i(texture_uniform, 0);
-	glActiveTexture(GL_TEXTURE0);
 }
 
 void Ogl33Program::setMvp(const Matrix<float,3,3>& mvp){
@@ -169,6 +167,8 @@ void Ogl33Program::setMesh(const Ogl33Mesh& mesh){
 
 void Ogl33Program::use(){
 	glUseProgram(program_id);
+	glActiveTexture(GL_TEXTURE0);
+	glUniform1i(texture_uniform, 0);
 }
 
 void Ogl33RenderTarget::setClearColour(const std::array<float,4>& colour){
@@ -199,8 +199,7 @@ void Ogl33Window::beginRender(){
 		return;
 	}
 	window->bind();
-	/// @undo comment
-	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClearColor(clear_colour[0], clear_colour[1], clear_colour[2], clear_colour[3]);
 	glClear(GL_COLOR_BUFFER_BIT /*| GL_DEPTH_BUFFER_BIT*/);
 }
@@ -385,9 +384,9 @@ void Ogl33Scene::visit(const Ogl33Camera&, std::vector<RenderObject*>& render_qu
 	}
 }
 
-void Ogl33RenderStage::renderOne(Ogl33Program& program, Ogl33RenderProperty& property, Ogl33Scene::RenderObject& object, Ogl33Mesh& mesh, Matrix<float, 3, 3>& vp){
+void Ogl33RenderStage::renderOne(Ogl33Program& program, Ogl33RenderProperty& property, Ogl33Scene::RenderObject& object, Ogl33Mesh& mesh, Ogl33Texture& texture, Matrix<float, 3, 3>& vp){
 	program.setMesh(mesh);
-	//program.setTexture(Ogl33Texture{0});
+	program.setTexture(texture);
 	Matrix<float, 3, 3> identity;
 	program.setMvp(identity);
 
@@ -426,8 +425,12 @@ void Ogl33RenderStage::render(Ogl33Render& render){
 		if(!mesh){
 			continue;
 		}
+		Ogl33Texture* texture = render.getTexture(property->texture_id);
+		if(!texture){
+			continue;
+		}
 		
-		renderOne(*program, *property, *iter, *mesh, vp);		
+		renderOne(*program, *property, *iter, *mesh, *texture, vp);		
 	}
 }
 
@@ -482,6 +485,14 @@ Ogl33Mesh* Ogl33Render::getMesh(const MeshId& id){
 	return nullptr;
 }
 
+Ogl33Texture* Ogl33Render::getTexture(const TextureId& id){
+	auto iter = textures.find(id);
+	if(iter != textures.end()){
+		return &iter->second;
+	}
+	return nullptr;
+}
+
 MeshId Ogl33Render::createMesh(const MeshData& data){
 	std::array<GLuint,3> ids;
 
@@ -514,10 +525,28 @@ void Ogl33Render::destroyMesh(const MeshId& id){
 	meshes.erase(id);
 }
 
+namespace {
+/// @todo get correct type. Not sure if it's GLint or GLuint
+GLint translateImageChannel(uint8_t channels){
+	std::array<GLint, 4> data{GL_RED, GL_RG, GL_RGB, GL_RGBA};
+	if(channels > 4 || channels == 0){
+		return GL_RGBA;
+	}
+	return data[channels-1];
+}
+}
+
 TextureId Ogl33Render::createTexture(const Image& image){
 	GLuint texture_id;
 	glGenTextures(1, &texture_id);
 	glBindTexture(GL_TEXTURE_2D, texture_id);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.pixels.data());
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 	

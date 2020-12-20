@@ -202,7 +202,7 @@ public:
 
 class Ogl33RenderStage {
 private:
-	void renderOne(Ogl33Program& program, Ogl33RenderProperty& property, Ogl33Scene::RenderObject& object, Ogl33Mesh& mesh, Matrix<float, 3, 3>& vp);
+	void renderOne(Ogl33Program& program, Ogl33RenderProperty& property, Ogl33Scene::RenderObject& object, Ogl33Mesh& mesh, Ogl33Texture&, Matrix<float, 3, 3>& vp);
 public:
 	RenderTargetId target_id;
 	RenderSceneId scene_id;
@@ -249,6 +249,7 @@ public:
 	Ogl33Program* getProgram(const ProgramId&);
 	Ogl33RenderProperty* getProperty(const RenderPropertyId&);
 	Ogl33Mesh* getMesh(const MeshId&);
+	Ogl33Texture* getTexture(const TextureId&);
 
 	MeshId createMesh(const MeshData&) override;
 	void destroyMesh(const MeshId&) override;

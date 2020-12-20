@@ -4,6 +4,6 @@
 
 const gin::Image default_image {
 	1, 1,
-	{1.0f, 0.f, 0.f, 1.f},
+	{0, 255, 0, 255},
 	4
 };

@@ -34,7 +34,7 @@ public:
 class Image {
 public:
 	size_t width, height;
-	std::vector<float> pixels;
+	std::vector<uint8_t> pixels;
 	uint8_t channels;
 };
 

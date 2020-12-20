@@ -24,12 +24,13 @@ const std::string default_fragment_shader = R"(#version 330 core
 
 in vec2 tex_coord;
 
-out vec3 color;
+out vec4 colour;
 
 uniform sampler2D texture_sampler;
 
 void main(){
-	// vec4 tex_colour = texture(texture_sampler, tex_coord);
-	color = vec3(1.0, 0.0, 0.0);
+	vec4 tex_colour = texture(texture_sampler, tex_coord);
+	colour = tex_colour;
+	// color = vec3(1.0, 0.0, 0.0);
 }
 )";
