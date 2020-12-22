@@ -31,11 +31,13 @@ public:
 	std::vector<unsigned int> indices;
 };
 
+/// @todo build a valid image on default or at least don't leave it
+/// undefined
 class Image {
 public:
-	size_t width, height;
+	size_t width = 0, height = 0;
 	std::vector<uint8_t> pixels;
-	uint8_t channels;
+	uint8_t channels = 0;
 };
 
 class RenderScene {

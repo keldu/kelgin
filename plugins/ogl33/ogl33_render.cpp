@@ -200,6 +200,7 @@ void Ogl33Window::beginRender(){
 	}
 	window->bind();
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glViewport(0,0,width(),height());
 	glClearColor(clear_colour[0], clear_colour[1], clear_colour[2], clear_colour[3]);
 	glClear(GL_COLOR_BUFFER_BIT /*| GL_DEPTH_BUFFER_BIT*/);
 }
@@ -226,6 +227,24 @@ void Ogl33Window::bind(){
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
+size_t Ogl33Window::width() const {
+	assert(window);
+	if(!window){
+		return 0;
+	}
+	const VideoMode& mode = window->videoMode();
+	return mode.width;
+}
+
+size_t Ogl33Window::height() const {
+	assert(window);
+	if(!window){
+		return 0;
+	}
+	const VideoMode& mode = window->videoMode();
+	return mode.height;
+}
+
 Ogl33RenderTexture::~Ogl33RenderTexture(){
 }
 
@@ -239,6 +258,14 @@ void Ogl33RenderTexture::endRender(){
 
 void Ogl33RenderTexture::bind(){
 
+}
+
+size_t Ogl33RenderTexture::width() const {
+	return 0;
+}
+
+size_t Ogl33RenderTexture::height() const {
+	return 0;
 }
 
 RenderTextureId Ogl33RenderTargetStorage::insert(Ogl33RenderTexture&& rt){
@@ -415,7 +442,6 @@ void Ogl33RenderStage::render(Ogl33Render& render){
 
 	auto vp = camera->view();
 
-	glViewport(0,0,600,400);
 	for(auto& iter : draw_queue){
 		Ogl33RenderProperty* property = render.getProperty(iter->id);
 		if(!property){
@@ -595,6 +621,8 @@ void Ogl33Render::setWindowDesiredFPS(const RenderWindowId& id, float fps){
 
 void Ogl33Render::destroyWindow(const RenderWindowId& id){
 	render_targets.erase(static_cast<RenderTargetId>(id));
+	render_target_stages.erase(static_cast<RenderTargetId>(id));
+	render_target_times.erase(static_cast<RenderTargetId>(id));
 }
 
 void Ogl33Render::setWindowVisibility(const RenderWindowId& id, bool show){
@@ -845,8 +873,6 @@ void Ogl33Render::flush(){
 }
 
 void Ogl33Render::step(const std::chrono::steady_clock::time_point& tp){
-
-
 	assert(context);
 	if(!context){
 		return;

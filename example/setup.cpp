@@ -6,6 +6,33 @@
 #include "./mesh_data.h"
 #include "./texture_data.h"
 
+#include "stb_image.h"
+#include <cstring>
+
+gin::Image loadFromFile(const std::string& path){
+	gin::Image image;
+
+	int32_t cmps;
+	int32_t width;
+	int32_t height;
+	uint8_t* data = stbi_load(path.c_str(), &width, &height, &cmps, 4);
+
+	if(cmps <= 0 || cmps > 255 || width <= 0 || height <= 0){
+		stbi_image_free(data);
+		return image;
+	}
+	image.channels = 4;
+	image.width = static_cast<size_t>(width);
+	image.height = static_cast<size_t>(height);
+	
+	image.pixels.resize(image.width * image.height * image.channels);
+
+	memcpy(&image.pixels[0], data, sizeof(uint8_t) * image.width * image.height * image.channels);
+	stbi_image_free(data);
+
+	return image;
+}
+
 int main() {
 	using namespace gin;
 
@@ -29,7 +56,7 @@ int main() {
 
 	ProgramId program_id = render->createProgram(default_vertex_shader, default_fragment_shader);
 	MeshId mesh_id = render->createMesh(default_mesh);
-	TextureId texture_id = render->createTexture(default_image);
+	TextureId texture_id = render->createTexture(loadFromFile("test.png"));
 
 	RenderSceneId scene_id = render->createScene();
 

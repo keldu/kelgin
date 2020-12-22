@@ -115,6 +115,9 @@ public:
 	void setClearColour(const std::array<float, 4>& colour);
 
 	virtual void bind() = 0;
+
+	virtual size_t width() const = 0;
+	virtual size_t height() const = 0;
 };
 
 class Ogl33Window final : public Ogl33RenderTarget {
@@ -139,6 +142,9 @@ public:
 	*
 	*/
 	void bind() override;
+
+	size_t width() const override;
+	size_t height() const override;
 };
 
 class Ogl33RenderTexture final : public Ogl33RenderTarget {
@@ -150,6 +156,9 @@ public:
 	void endRender() override;
 
 	void bind() override;
+
+	size_t width() const override;
+	size_t height() const override;
 };
 
 /// @todo this storage kinda feels hacky
