@@ -69,6 +69,19 @@ int main() {
 
 	RenderStageId stage_id = render->createStage(program_id, win_id, scene_id, camera_id);
 
+	auto events = render->listenToWindowEvents(win_id).then([](RenderEvent::Events&& event){
+		std::visit([](auto&& arg){
+			using T = std::decay_t<decltype(arg)>;
+			if constexpr (std::is_same_v<T, RenderEvent::Resize>){
+				std::cout<<"Resize: "<<arg.width<<" "<<arg.height<<std::endl;
+			}else if constexpr(std::is_same_v<T, RenderEvent::Keyboard>){
+				std::cout<<"Keypress: "<<arg.key_code<<" "<<arg.pressed<<std::endl;
+			}else if constexpr(std::is_same_v<T, RenderEvent::Mouse>){
+				std::cout<<"Mousepress: "<<arg.button<<" "<<arg.pressed<<std::endl;
+			}
+		},event);
+	}).sink([](const Error& error){return error;});
+
 	render->setWindowVisibility(win_id, true);
 	render->setWindowDesiredFPS(win_id, 10.0f);
 	render->flush();

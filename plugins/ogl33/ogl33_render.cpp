@@ -208,15 +208,36 @@ void Ogl33Window::hide(){
 	}
 }
 
+namespace {
+template<class> inline constexpr bool always_false_v = false;
+}
+
 Conveyor<RenderEvent::Events> Ogl33Window::listenToWindowEvents(){
 	assert(window);
 	if(!window){
 		return Conveyor<RenderEvent::Events>{nullptr, nullptr};
 	}
-
+	/*
+	 * Convert anonymous window events from kelgin-window to kelgin-graphics events
+	 * This needs to be translated, because the interface doesn't know kelgin-window headers
+	 * and shouldn't know it. kelgin-window is a driver abstraction library for creating windows
+	 * and currently also gl contexts. kelgin-graphics is a plugin based render engine.
+	 */
 	return window->onEvent().then([](Window::VariantEvent&& event){
-		(void)event;
-		return RenderEvent::Events{RenderEvent::Resize{}};
+		return std::visit([](auto&& arg) -> RenderEvent::Events {
+			using T = std::decay_t<decltype(arg)>;
+			if constexpr (std::is_same_v<T, Window::Event::Resize>){
+				return RenderEvent::Resize{arg.width, arg.height};
+			}else if constexpr(std::is_same_v<T, Window::Event::Keyboard>){
+				return RenderEvent::Keyboard{arg.key, arg.pressed, arg.repeat};
+			}else if constexpr(std::is_same_v<T, Window::Event::Mouse>){
+				return RenderEvent::Mouse{arg.button_mask, arg.pressed};
+			}else if constexpr(std::is_same_v<T, Window::Event::MouseMove>){
+				return RenderEvent::MouseMove{};
+			}else{
+				static_assert(always_false_v<T>, "Type in Visitor not exhausted");
+			}
+		}, event);
 	});
 }
 

@@ -43,15 +43,19 @@ public:
 
 struct RenderEvent {
 	struct Keyboard {
-
+		uint32_t key_code;
+		bool pressed;
+		bool repeat;
 	};
 
 	struct Resize {
-
+		size_t width;
+		size_t height;
 	};
 
 	struct Mouse {
-
+		uint16_t button;
+		bool pressed;
 	};
 
 	struct MouseMove {
