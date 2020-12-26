@@ -82,7 +82,7 @@ public:
 	virtual RenderWindowId createWindow(const RenderVideoMode&, const std::string& title) = 0;
 	virtual void setWindowDesiredFPS(const RenderWindowId&, float fps) = 0;
 	virtual void setWindowVisibility(const RenderWindowId& id, bool show) = 0;
-	virtual Convevoyr<RenderEvent::Events> listenWindowEvents(const RenderWindowId&) = 0;
+	virtual Conveyor<RenderEvent::Events> listenToWindowEvents(const RenderWindowId&) = 0;
 	virtual void destroyWindow(const RenderWindowId& id) = 0;
 
 	virtual ProgramId createProgram(const std::string& vertex_src, const std::string& fragment_src) = 0;

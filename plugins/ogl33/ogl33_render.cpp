@@ -214,7 +214,10 @@ Conveyor<RenderEvent::Events> Ogl33Window::listenToWindowEvents(){
 		return Conveyor<RenderEvent::Events>{};
 	}
 
-	return window->onEvent();
+	return window->onEvent().then([](Window::VariantEvent&& event){
+		(void)event;
+		return Conveyor<RenderEvent::Events>{};
+	});
 }
 
 void Ogl33Window::beginRender(){
