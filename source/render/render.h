@@ -6,6 +6,7 @@
 #include <kelgin/io.h>
 
 #include <chrono>
+#include <variant>
 
 namespace gin {
 using MeshId = ResourceId;
@@ -40,16 +41,24 @@ public:
 	uint8_t channels = 0;
 };
 
-class RenderScene {
-public:
-	virtual ~RenderScene() = default;
-};
+struct RenderEvent {
+	struct Keyboard {
 
-class RenderWorld {
-public:
-	virtual ~RenderWorld() = default;
+	};
 
-	virtual Own<RenderScene> createScene() = 0;
+	struct Resize {
+
+	};
+
+	struct Mouse {
+
+	};
+
+	struct MouseMove {
+
+	};
+
+	using Events = std::variant<Keyboard, Resize, Mouse, MouseMove>;
 };
 
 struct RenderVideoMode {
@@ -73,6 +82,7 @@ public:
 	virtual RenderWindowId createWindow(const RenderVideoMode&, const std::string& title) = 0;
 	virtual void setWindowDesiredFPS(const RenderWindowId&, float fps) = 0;
 	virtual void setWindowVisibility(const RenderWindowId& id, bool show) = 0;
+	virtual Convevoyr<RenderEvent::Events> listenWindowEvents(const RenderWindowId&) = 0;
 	virtual void destroyWindow(const RenderWindowId& id) = 0;
 
 	virtual ProgramId createProgram(const std::string& vertex_src, const std::string& fragment_src) = 0;
@@ -81,6 +91,7 @@ public:
 	virtual RenderCameraId createCamera() = 0;
 	virtual void setCameraPosition(const RenderCameraId&, float x, float y) = 0;
 	virtual void setCameraRotation(const RenderCameraId&, float alpha) = 0;
+	virtual void setCameraOrthographic(const RenderCameraId&, float, float, float, float, float, float) = 0;
 	virtual void destroyCamera(const RenderCameraId&) = 0;
 
 	virtual RenderStageId createStage(const RenderTargetId& id, const RenderSceneId&, const RenderCameraId&, const ProgramId&) = 0;

@@ -41,6 +41,8 @@ public:
 	void setViewPosition(float x, float y);
 	void setViewRotation(float angle);
 
+	void setOrtho(float left, float right, float top, float bot, float near, float far);
+
 	const Matrix<float, 3,3>& view() const;
 	const Matrix<float, 3,3>& projection() const;
 };
@@ -107,7 +109,7 @@ class Ogl33RenderTarget {
 protected:
 	~Ogl33RenderTarget() = default;
 
-	std::array<float, 4> clear_colour = {0.f, 0.f, 0.f, 0.f};
+	std::array<float, 4> clear_colour = {0.f, 0.f, 0.f, 1.f};
 public:
 	virtual void beginRender() = 0;
 	virtual void endRender() = 0;
@@ -128,6 +130,8 @@ public:
 
 	void show();
 	void hide();
+
+	Conveyor<RenderEvent::Events> listenToWindowEvents();
 
 	void beginRender() override;
 	void endRender() override;
@@ -277,6 +281,8 @@ public:
 	RenderCameraId createCamera() override;
 	void setCameraPosition(const RenderCameraId&, float x, float y) override;
 	void setCameraRotation(const RenderCameraId&, float alpha) override;
+	void setCameraOrthographic(const RenderCameraId&, float, float, float, float, float, float) override;
+	Conveyor<RenderEvent::Events> listenToWindowEvents(const RenderWindowId&) override;
 	void destroyCamera(const RenderCameraId&) override;
 
 	RenderStageId createStage(const RenderTargetId& id, const RenderSceneId&, const RenderCameraId&, const ProgramId&) override;

@@ -30,6 +30,20 @@ Ogl33Camera::Ogl33Camera()
 	}
 }
 
+void Ogl33Camera::setOrtho(float left, float right, float bottom, float top, float near, float far){
+	projection_matrix(0,0) = 2.0 / (right - left);
+	projection_matrix(0,1) = 0.f;
+	projection_matrix(0,2) = 0.f;
+
+	projection_matrix(1,0) = 0.f;
+	projection_matrix(1,1) = 2.0f / (top-bottom);
+	projection_matrix(1,2) = 0.f;
+
+	projection_matrix(2,0) = 0.f;
+	projection_matrix(2,1) = 0.f;
+	projection_matrix(2,2) = 1.0f;
+}
+
 void Ogl33Camera::setViewPosition(float x, float y){
 	view_matrix(0, 2) = x;
 	view_matrix(1, 2) = y;
@@ -187,10 +201,20 @@ void Ogl33Window::show(){
 }
 
 void Ogl33Window::hide(){
+	assert(window);
 	if(window){
 		window->bind();
 		window->hide();
 	}
+}
+
+Conveyor<RenderEvent::Events> Ogl33Window::listenToWindowEvents(){
+	assert(window);
+	if(!window){
+		return Conveyor<RenderEvent::Events>{};
+	}
+
+	return window->onEvent();
 }
 
 void Ogl33Window::beginRender(){
@@ -217,7 +241,7 @@ void Ogl33Window::endRender(){
 void Ogl33Window::bindAsMain(){
 	assert(window);
 	if(!window){
-
+		return;
 	}
 
 	window->bind();
@@ -414,8 +438,7 @@ void Ogl33Scene::visit(const Ogl33Camera&, std::vector<RenderObject*>& render_qu
 void Ogl33RenderStage::renderOne(Ogl33Program& program, Ogl33RenderProperty& property, Ogl33Scene::RenderObject& object, Ogl33Mesh& mesh, Ogl33Texture& texture, Matrix<float, 3, 3>& vp){
 	program.setMesh(mesh);
 	program.setTexture(texture);
-	Matrix<float, 3, 3> identity;
-	program.setMvp(identity);
+	program.setMvp(vp);
 
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0L);
 }
@@ -440,7 +463,13 @@ void Ogl33RenderStage::render(Ogl33Render& render){
 
 	program->use();
 
-	auto vp = camera->view();
+	Matrix<float, 3, 3> vp = camera->projection()*camera->view();
+
+	for(size_t i = 0; i < 3; ++i){
+		for(size_t j = 0; j < 3; ++j){
+
+		}
+	}
 
 	for(auto& iter : draw_queue){
 		Ogl33RenderProperty* property = render.getProperty(iter->id);
@@ -625,6 +654,15 @@ void Ogl33Render::destroyWindow(const RenderWindowId& id){
 	render_target_times.erase(static_cast<RenderTargetId>(id));
 }
 
+Conveyor<RenderEvents::Events> Ogl33Render::listenToWindowEvents(const RenderWindowId& id) {
+	Ogl33Window* window = render_targets.getWindow(id);
+	if(!window){
+		return Conveyor<RenderEvents::Events>{};
+	}
+
+	return window->listenToWindowEvents();
+}
+
 void Ogl33Render::setWindowVisibility(const RenderWindowId& id, bool show){
 	Ogl33Window* window = render_targets.getWindow(id);
 	if(!window){
@@ -721,7 +759,7 @@ ProgramId Ogl33Render::createProgram(const std::string& vertex_src, const std::s
 	glDeleteShader(vertex_shader_id);
 	glDeleteShader(fragment_shader_id);
 
-	GLuint mvp_id = glGetUniformLocation(p_id, "model_view_projection");
+	GLuint mvp_id = glGetUniformLocation(p_id, "mvp");
 	GLuint texture_sampler_id = glGetUniformLocation(p_id, "texture_sampler");
 
 	ProgramId id = searchForFreeId(programs);
@@ -741,6 +779,13 @@ RenderCameraId Ogl33Render::createCamera(){
 
 	cameras.insert(std::make_pair(id, Ogl33Camera{}));
 	return id;
+}
+
+void Ogl33Render::setCameraOrthographic(const RenderCameraId& id, float l, float r, float t, float b, float n, float f){
+	auto find = cameras.find(id);
+	if(find != cameras.end()){
+		find->second.setOrtho(l, r, t , b, n , f);
+	}
 }
 
 void Ogl33Render::setCameraPosition(const RenderCameraId& id, float x, float y){

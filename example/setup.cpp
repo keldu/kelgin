@@ -65,6 +65,7 @@ int main() {
 	RenderObjectId ro_id = render->createObject(scene_id, rp_id);
 
 	RenderCameraId camera_id = render->createCamera();
+	render->setCameraOrthographic(camera_id, -2.0f, 2.0f, -2.0f, 2.0f, -1.0f, 1.0f);
 
 	RenderStageId stage_id = render->createStage(program_id, win_id, scene_id, camera_id);
 
