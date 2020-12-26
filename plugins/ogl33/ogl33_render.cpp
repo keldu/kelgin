@@ -211,12 +211,12 @@ void Ogl33Window::hide(){
 Conveyor<RenderEvent::Events> Ogl33Window::listenToWindowEvents(){
 	assert(window);
 	if(!window){
-		return Conveyor<RenderEvent::Events>{};
+		return Conveyor<RenderEvent::Events>{nullptr, nullptr};
 	}
 
 	return window->onEvent().then([](Window::VariantEvent&& event){
 		(void)event;
-		return Conveyor<RenderEvent::Events>{};
+		return Conveyor<RenderEvent::Events>{nullptr, nullptr};
 	});
 }
 
@@ -657,10 +657,10 @@ void Ogl33Render::destroyWindow(const RenderWindowId& id){
 	render_target_times.erase(static_cast<RenderTargetId>(id));
 }
 
-Conveyor<RenderEvents::Events> Ogl33Render::listenToWindowEvents(const RenderWindowId& id) {
+Conveyor<RenderEvent::Events> Ogl33Render::listenToWindowEvents(const RenderWindowId& id) {
 	Ogl33Window* window = render_targets.getWindow(id);
 	if(!window){
-		return Conveyor<RenderEvents::Events>{};
+		return Conveyor<RenderEvent::Events>{nullptr, nullptr};
 	}
 
 	return window->listenToWindowEvents();
