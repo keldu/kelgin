@@ -216,7 +216,7 @@ Conveyor<RenderEvent::Events> Ogl33Window::listenToWindowEvents(){
 
 	return window->onEvent().then([](Window::VariantEvent&& event){
 		(void)event;
-		return Conveyor<RenderEvent::Events>{nullptr, nullptr};
+		return RenderEvent::Events{RenderEvent::Resize{}};
 	});
 }
 
