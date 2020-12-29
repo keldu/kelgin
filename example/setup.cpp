@@ -57,27 +57,52 @@ int main() {
 	ProgramId program_id = render->createProgram(default_vertex_shader, default_fragment_shader);
 	MeshId mesh_id = render->createMesh(default_mesh);
 	TextureId texture_id = render->createTexture(loadFromFile("test.png"));
+	TextureId green_square_tex_id = render->createTexture(default_image);
 
 	RenderSceneId scene_id = render->createScene();
 
 	RenderPropertyId rp_id = render->createProperty(mesh_id, texture_id);
+	RenderPropertyId gsq_rp_id = render->createProperty(mesh_id, green_square_tex_id);
 
-	RenderObjectId ro_id = render->createObject(scene_id, rp_id);
+	RenderObjectId ro_id = render->createObject(scene_id, gsq_rp_id);
 
 	RenderCameraId camera_id = render->createCamera();
 	render->setCameraOrthographic(camera_id, -2.0f, 2.0f, -2.0f, 2.0f, -1.0f, 1.0f);
 
 	RenderStageId stage_id = render->createStage(program_id, win_id, scene_id, camera_id);
+	
+	float x = 0.f;
+	float y = 0.f;
+	float vx = 0.f;
+	float vy = 0.f;
+	float ax = 0.f;
+	float ay = -9.81f;
 
-	auto events = render->listenToWindowEvents(win_id).then([&render, camera_id](RenderEvent::Events&& event){
-		std::visit([&render, camera_id](auto&& arg){
+	auto events = render->listenToWindowEvents(win_id).then([&](RenderEvent::Events&& event){
+		std::visit([&](auto&& arg){
 			using T = std::decay_t<decltype(arg)>;
 			if constexpr (std::is_same_v<T, RenderEvent::Resize>){
 				float aspect = static_cast<float>(arg.width) / static_cast<float>(arg.height);
-				render->setCameraOrthographic(camera_id, - 2.0f * aspect, 2.0f * aspect,  -2.0f, 2.0f, -1.0f, 1.0f);
+				float zoom = 10.f;
+				render->setCameraOrthographic(camera_id, - 2.0f * aspect*zoom, 2.0f * aspect*zoom,  -2.0f*zoom, 2.0f*zoom, -1.0f, 1.0f);
 				std::cout<<"Resize: "<<arg.width<<" "<<arg.height<<std::endl;
 			}else if constexpr(std::is_same_v<T, RenderEvent::Keyboard>){
 				std::cout<<"Keypress: "<<arg.key_code<<" "<<arg.pressed<<std::endl;
+				switch(arg.key_code){
+				case 65:
+					if(arg.pressed) vy = 10.f;
+				break;
+				case 40:
+					if(arg.pressed) vx = 10.f;
+					else vx = 0.f;
+				break;
+				case 38:
+					if(arg.pressed) vx = -10.f;
+					else vx = 0.f;
+				break;
+				default:
+				break;
+				}
 			}else if constexpr(std::is_same_v<T, RenderEvent::Mouse>){
 				std::cout<<"Mousepress: "<<arg.button<<" "<<arg.pressed<<std::endl;
 			}
@@ -85,11 +110,8 @@ int main() {
 	}).sink([](const Error& error){return error;});
 
 	render->setWindowVisibility(win_id, true);
-	render->setWindowDesiredFPS(win_id, 10.0f);
+	render->setWindowDesiredFPS(win_id, 60.0f);
 	render->flush();
-
-	float x = 0.f;
-	float angle = 0.f;
 
 	auto old_time = std::chrono::steady_clock::now();
 	while (running) {
@@ -97,15 +119,20 @@ int main() {
 
 		std::chrono::duration<float> fs = time - old_time;
 
-		x += 0.0001f * fs.count();
-		angle += 0.9f * fs.count();
-		render->setObjectPosition(scene_id, ro_id, x, 0.f);
-		render->setObjectRotation(scene_id, ro_id, angle);
+		vx += ax * fs.count();
+		vy += ay * fs.count();
+
+		x += vx * fs.count();
+		y += vy * fs.count();
+
+		y = y < 0 ? 0.f : y;
+
+		render->setObjectPosition(scene_id, ro_id, x, y);
 
 		render->step(time);
 
 		render->flush();
-		async.wait_scope.wait(std::chrono::milliseconds{10});
+		async.wait_scope.wait(std::chrono::milliseconds{5});
 		old_time = time;
 	}
 
