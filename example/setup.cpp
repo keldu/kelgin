@@ -51,29 +51,31 @@ int main() {
 		return -1;
 	}
 
-	//
+//	========================= Render Windows =============================
 	RenderWindowId win_id = render->createWindow({600,400}, "Kelgin Setup Example");
 	render->flush();
 
 //	=========================== Programs =================================
 	ProgramId program_id = render->createProgram(default_vertex_shader, default_fragment_shader);
-	
+
 //	============================ Meshes ==================================
 	MeshId mesh_id = render->createMesh(default_mesh);
 	MeshId bg_mesh_id = render->createMesh(bg_mesh);
-	
+
 //  =========================== Textures =================================
 	TextureId texture_id = render->createTexture(loadFromFile("test.png"));
 	TextureId green_square_tex_id = render->createTexture(default_image);
 	TextureId bg_tex_id = render->createTexture(loadFromFile("bg.png"));
-	
+
 //	============================ Scenes ==================================
 	RenderSceneId scene_id = render->createScene();
 
+//	===================== Render Properties ==============================
 	RenderPropertyId rp_id = render->createProperty(mesh_id, texture_id);
 	RenderPropertyId gsq_rp_id = render->createProperty(mesh_id, green_square_tex_id);
 	RenderPropertyId bg_rp_id = render->createProperty(bg_mesh_id, bg_tex_id);
 
+//	======================= Render Objects ===============================
 	RenderObjectId ro_id = render->createObject(scene_id, gsq_rp_id);
 	std::array<std::array<RenderObjectId,3>,3> bg_ro_ids = {
 		render->createObject(scene_id, bg_rp_id),
