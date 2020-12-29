@@ -8,6 +8,7 @@
 
 #include "stb_image.h"
 #include <cstring>
+#include <array>
 
 gin::Image loadFromFile(const std::string& path){
 	gin::Image image;
@@ -54,17 +55,43 @@ int main() {
 	RenderWindowId win_id = render->createWindow({600,400}, "Kelgin Setup Example");
 	render->flush();
 
+//	=========================== Programs =================================
 	ProgramId program_id = render->createProgram(default_vertex_shader, default_fragment_shader);
+	
+//	============================ Meshes ==================================
 	MeshId mesh_id = render->createMesh(default_mesh);
+	MeshId bg_mesh_id = render->createMesh(bg_mesh);
+	
+//  =========================== Textures =================================
 	TextureId texture_id = render->createTexture(loadFromFile("test.png"));
 	TextureId green_square_tex_id = render->createTexture(default_image);
-
+	TextureId bg_tex_id = render->createTexture(loadFromFile("bg.png"));
+	
+//	============================ Scenes ==================================
 	RenderSceneId scene_id = render->createScene();
 
 	RenderPropertyId rp_id = render->createProperty(mesh_id, texture_id);
 	RenderPropertyId gsq_rp_id = render->createProperty(mesh_id, green_square_tex_id);
+	RenderPropertyId bg_rp_id = render->createProperty(bg_mesh_id, bg_tex_id);
 
 	RenderObjectId ro_id = render->createObject(scene_id, gsq_rp_id);
+	std::array<std::array<RenderObjectId,3>,3> bg_ro_ids = {
+		render->createObject(scene_id, bg_rp_id),
+		render->createObject(scene_id, bg_rp_id),
+		render->createObject(scene_id, bg_rp_id),
+		render->createObject(scene_id, bg_rp_id),
+		render->createObject(scene_id, bg_rp_id),
+		render->createObject(scene_id, bg_rp_id),
+		render->createObject(scene_id, bg_rp_id),
+		render->createObject(scene_id, bg_rp_id),
+		render->createObject(scene_id, bg_rp_id)
+	};
+
+	for(size_t i = 0; i < 3; ++i){
+		for(size_t j = 0; j < 3; ++j){
+			render->setObjectPosition(scene_id, bg_ro_ids[i][j], i * 80.f - 80.f, j * 80.f - 80.f);
+		}
+	}
 
 	RenderCameraId camera_id = render->createCamera();
 	float aspect = 600.f / 400.f;
@@ -73,12 +100,13 @@ int main() {
 
 	RenderStageId stage_id = render->createStage(program_id, win_id, scene_id, camera_id);
 	
+	int dx = 0;
+	int dy = 0;
+
 	float x = 0.f;
 	float y = 0.f;
 	float vx = 0.f;
 	float vy = 0.f;
-	float ax = 0.f;
-	float ay = -9.81f;
 
 	auto events = render->listenToWindowEvents(win_id).then([&](RenderEvent::Events&& event){
 		std::visit([&](auto&& arg){
@@ -97,12 +125,20 @@ int main() {
 					if(arg.pressed && y < 1e-5f) vy = 10.f;
 				break;
 				case 40:
-					if(arg.pressed) ax = 15.f;
-					else ax = 0.f;
+					if(arg.pressed) dx = 1;
+					else dx = 0;
 				break;
 				case 38:
-					if(arg.pressed) ax = -15.f;
-					else ax = 0.f;
+					if(arg.pressed) dx = -1;
+					else dx = 0;
+				break;
+				case 39:
+					if(arg.pressed) dy = -1;
+					else dy = 0;
+				break;
+				case 25:
+					if(arg.pressed) dy = 1;
+					else dy = 0;
 				break;
 				default:
 				break;
@@ -131,13 +167,21 @@ int main() {
 				vx -= friction;
 			}
 		}
-		vx += ax * fs.count();
-		vy += ay * fs.count();
+		vx = dx * 15.f;
+		vy = dy * 15.f;
 
 		x += vx * fs.count();
 		y += vy * fs.count();
 
-		y = y < 0 ? 0.f : y;
+		render->setCameraPosition(camera_id, x, y);
+
+		int64_t ix = static_cast<int64_t>(x / 80.f);
+		int64_t iy = static_cast<int64_t>(y / 80.f);
+		for(size_t i = 0; i < 3; ++i){
+			for(size_t j = 0; j < 3; ++j){
+				render->setObjectPosition(scene_id, bg_ro_ids[i][j], (static_cast<int64_t>(i) + ix - 1) * 80.f, (static_cast<int64_t>(j) + iy - 1) * 80.f);
+			}
+		}
 
 		render->setObjectPosition(scene_id, ro_id, x, y);
 

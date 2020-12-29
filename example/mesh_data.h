@@ -20,3 +20,22 @@ const gin::MeshData default_mesh = {
 		2, 0, 3
 	}
 };
+
+const gin::MeshData bg_mesh = {
+	{
+		40.f, 40.f,
+		40.f, -40.f,
+		-40.f, -40.f,
+		-40.f, 40.f
+	},
+	{
+		1.f, 0.f,
+		1.f, 1.f,
+		0.f, 1.f,
+		0.f, 0.f
+	},
+	{
+		0, 1, 2,
+		2, 0, 3
+	}
+};

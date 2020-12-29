@@ -45,8 +45,8 @@ void Ogl33Camera::setOrtho(float left, float right, float bottom, float top, flo
 }
 
 void Ogl33Camera::setViewPosition(float x, float y){
-	view_matrix(0, 2) = x;
-	view_matrix(1, 2) = y;
+	view_matrix(0, 2) = -x;
+	view_matrix(1, 2) = -y;
 }
 
 void Ogl33Camera::setViewRotation(float angle){
@@ -467,8 +467,8 @@ void Ogl33RenderStage::renderOne(Ogl33Program& program, Ogl33RenderProperty& pro
 	float sin_a = sin(object.angle);
 	mvp(0,0) = cos_a;
 	mvp(1,1) = cos_a;
-	mvp(0,1) = sin_a;
-	mvp(1,0) = -sin_a;
+	mvp(0,1) = -sin_a;
+	mvp(1,0) = sin_a;
 	mvp(0,2) = object.x;
 	mvp(1,2) = object.y;
 	mvp(2,2) = 1.f;
