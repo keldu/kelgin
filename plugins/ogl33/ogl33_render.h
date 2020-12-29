@@ -304,5 +304,7 @@ public:
 
 	void step(const std::chrono::steady_clock::time_point&) override;
 	void flush() override;
+
+	virtual void updateTime(const std::chrono::steady_clock::time_point& ) override;
 };
 }

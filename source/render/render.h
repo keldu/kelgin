@@ -117,6 +117,8 @@ public:
 
 	virtual void step(const std::chrono::steady_clock::time_point&) = 0;
 	virtual void flush() = 0;
+
+	virtual void updateTime(const std::chrono::steady_clock::time_point&) = 0;
 };
 }
 

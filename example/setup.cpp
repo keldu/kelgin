@@ -90,16 +90,19 @@ int main() {
 			}else if constexpr(std::is_same_v<T, RenderEvent::Keyboard>){
 				std::cout<<"Keypress: "<<arg.key_code<<" "<<arg.pressed<<std::endl;
 				switch(arg.key_code){
+				case 9:
+					if(!arg.pressed) running = false;
+				break;
 				case 65:
-					if(arg.pressed) vy = 10.f;
+					if(arg.pressed && y < 1e-5f) vy = 10.f;
 				break;
 				case 40:
-					if(arg.pressed) vx = 10.f;
-					else vx = 0.f;
+					if(arg.pressed) ax = 15.f;
+					else ax = 0.f;
 				break;
 				case 38:
-					if(arg.pressed) vx = -10.f;
-					else vx = 0.f;
+					if(arg.pressed) ax = -15.f;
+					else ax = 0.f;
 				break;
 				default:
 				break;
@@ -120,6 +123,14 @@ int main() {
 
 		std::chrono::duration<float> fs = time - old_time;
 
+		if ( y <= 1e-5f){
+			float friction = 9.81 * ((0.f < vx ) - (vx < 0.f))*fs.count();
+			if(std::abs(vx) < std::abs(friction)){
+				vx -= 0.f;
+			}else {
+				vx -= friction;
+			}
+		}
 		vx += ax * fs.count();
 		vy += ay * fs.count();
 

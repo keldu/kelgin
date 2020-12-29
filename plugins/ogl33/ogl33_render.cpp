@@ -984,6 +984,10 @@ void Ogl33Render::step(const std::chrono::steady_clock::time_point& tp){
 		target->endRender();
 	}
 }
+
+void Ogl33Render::updateTime(const std::chrono::steady_clock::time_point& ){
+	/// @todo implement interpolation
+}
 }
 
 extern "C" gin::LowLevelRender* createRenderer(gin::AsyncIoProvider& io_provider){
