@@ -462,7 +462,20 @@ void Ogl33Scene::visit(const Ogl33Camera&, std::vector<RenderObject*>& render_qu
 void Ogl33RenderStage::renderOne(Ogl33Program& program, Ogl33RenderProperty& property, Ogl33Scene::RenderObject& object, Ogl33Mesh& mesh, Ogl33Texture& texture, Matrix<float, 3, 3>& vp){
 	program.setMesh(mesh);
 	program.setTexture(texture);
-	program.setMvp(vp);
+	Matrix<float, 3, 3> mvp;
+	float cos_a = cos(object.angle);
+	float sin_a = sin(object.angle);
+	mvp(0,0) = cos_a;
+	mvp(1,1) = cos_a;
+	mvp(0,1) = sin_a;
+	mvp(1,0) = -sin_a;
+	mvp(0,2) = object.x;
+	mvp(1,2) = object.y;
+	mvp(2,2) = 1.f;
+
+	mvp = vp * mvp;
+
+	program.setMvp(mvp);
 
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0L);
 }

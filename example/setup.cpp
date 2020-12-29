@@ -69,10 +69,12 @@ int main() {
 
 	RenderStageId stage_id = render->createStage(program_id, win_id, scene_id, camera_id);
 
-	auto events = render->listenToWindowEvents(win_id).then([](RenderEvent::Events&& event){
-		std::visit([](auto&& arg){
+	auto events = render->listenToWindowEvents(win_id).then([&render, camera_id](RenderEvent::Events&& event){
+		std::visit([&render, camera_id](auto&& arg){
 			using T = std::decay_t<decltype(arg)>;
 			if constexpr (std::is_same_v<T, RenderEvent::Resize>){
+				float aspect = static_cast<float>(arg.width) / static_cast<float>(arg.height);
+				render->setCameraOrthographic(camera_id, - 2.0f * aspect, 2.0f * aspect,  -2.0f, 2.0f, -1.0f, 1.0f);
 				std::cout<<"Resize: "<<arg.width<<" "<<arg.height<<std::endl;
 			}else if constexpr(std::is_same_v<T, RenderEvent::Keyboard>){
 				std::cout<<"Keypress: "<<arg.key_code<<" "<<arg.pressed<<std::endl;
@@ -86,12 +88,25 @@ int main() {
 	render->setWindowDesiredFPS(win_id, 10.0f);
 	render->flush();
 
+	float x = 0.f;
+	float angle = 0.f;
+
+	auto old_time = std::chrono::steady_clock::now();
 	while (running) {
 		auto time = std::chrono::steady_clock::now();
+
+		std::chrono::duration<float> fs = time - old_time;
+
+		x += 0.0001f * fs.count();
+		angle += 0.9f * fs.count();
+		render->setObjectPosition(scene_id, ro_id, x, 0.f);
+		render->setObjectRotation(scene_id, ro_id, angle);
+
 		render->step(time);
 
 		render->flush();
 		async.wait_scope.wait(std::chrono::milliseconds{10});
+		old_time = time;
 	}
 
 	// Stuff gets cleaned up anyway
