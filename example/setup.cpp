@@ -67,7 +67,9 @@ int main() {
 	RenderObjectId ro_id = render->createObject(scene_id, gsq_rp_id);
 
 	RenderCameraId camera_id = render->createCamera();
-	render->setCameraOrthographic(camera_id, -2.0f, 2.0f, -2.0f, 2.0f, -1.0f, 1.0f);
+	float aspect = 600.f / 400.f;
+	float zoom = 10.f;
+	render->setCameraOrthographic(camera_id, -2.0f * aspect * zoom, 2.0f * aspect * zoom, -2.0f * aspect * zoom, 2.0f * aspect * zoom, -1.0f, 1.0f);
 
 	RenderStageId stage_id = render->createStage(program_id, win_id, scene_id, camera_id);
 	
@@ -82,8 +84,7 @@ int main() {
 		std::visit([&](auto&& arg){
 			using T = std::decay_t<decltype(arg)>;
 			if constexpr (std::is_same_v<T, RenderEvent::Resize>){
-				float aspect = static_cast<float>(arg.width) / static_cast<float>(arg.height);
-				float zoom = 10.f;
+				aspect = static_cast<float>(arg.width) / static_cast<float>(arg.height);
 				render->setCameraOrthographic(camera_id, - 2.0f * aspect*zoom, 2.0f * aspect*zoom,  -2.0f*zoom, 2.0f*zoom, -1.0f, 1.0f);
 				std::cout<<"Resize: "<<arg.width<<" "<<arg.height<<std::endl;
 			}else if constexpr(std::is_same_v<T, RenderEvent::Keyboard>){
