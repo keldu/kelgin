@@ -102,7 +102,9 @@ def format_iter(env,files):
     pass
 
 format_iter(env,env.sources + env.headers + env.daemon_sources + env.daemon_headers + env.example_sources + env.example_headers)
-
 env.Alias('format', env.format_actions)
 env.Alias('all', ['library','plugins','daemon','example_setup'])
 # env.Alias('test', env.test_program)
+env.Install('/usr/local/lib/', [env.library_shared, env.library_static])
+env.Install('/usr/local/include/kelgin/graphics/', [env.headers])
+env.Alias('install', '/usr/local/')

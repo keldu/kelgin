@@ -59,18 +59,27 @@ public:
 	void use();
 };
 
+/// @todo Implement usage of VertexArrayObjects
 class Ogl33Mesh final : public Ogl33Resource {
 private:
 	std::array<GLuint,3> ids;
+	size_t indices;
+	
+	// GLuint vao;
 public:
 	Ogl33Mesh();
-	Ogl33Mesh(std::array<GLuint,3>&&);
+	Ogl33Mesh(std::array<GLuint,3>&&, size_t);
+	// Ogl33Mesh(std::array<GLuint,3>&&, size_t, GLuint);
 	~Ogl33Mesh();
 	Ogl33Mesh(Ogl33Mesh&&);
+
+	// void bindAttribute() const;
 
 	void bindVertex() const;
 	void bindUV() const;
 	void bindIndex() const;
+
+	size_t indexCount() const;
 };
 
 class Ogl33Texture final : public Ogl33Resource {
@@ -91,9 +100,10 @@ private:
 
 	GLuint texture_uniform;
 	GLuint mvp_uniform;
+	GLuint layer_uniform;
 public:
 	Ogl33Program();
-	Ogl33Program(GLuint, GLuint, GLuint);
+	Ogl33Program(GLuint, GLuint, GLuint, GLuint);
 	~Ogl33Program();
 
 	Ogl33Program(Ogl33Program&&);
@@ -101,6 +111,8 @@ public:
 	void setTexture(const Ogl33Texture&);
 	void setMvp(const Matrix<float,3,3>&);
 	void setMesh(const Ogl33Mesh&);
+	void setLayer(float);
+	void setLayer(int16_t);
 
 	void use();
 };
@@ -200,6 +212,7 @@ public:
 		float x;
 		float y;
 		float angle;
+		float layer;
 	};
 private:
 	std::unordered_map<RenderObjectId, RenderObject> objects;

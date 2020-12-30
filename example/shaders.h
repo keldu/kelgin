@@ -9,12 +9,12 @@ layout (location = 1) in vec2 uvs;
 
 out vec2 tex_coord;
 
+uniform float layer;
 uniform mat3 mvp;
 
 void main(){
 	vec3 transformed = mvp * vec3(vertices, 1.0);
-	// vec3 transformed = vec3(vertices, 0.0);
-	gl_Position.xyz = vec3(transformed.x, transformed.y, 0.0);
+	gl_Position.xyz = vec3(transformed.x, transformed.y, layer);
 	gl_Position.w = transformed.z;
 	tex_coord = uvs;
 }

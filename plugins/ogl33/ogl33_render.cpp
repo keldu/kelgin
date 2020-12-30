@@ -80,8 +80,9 @@ Ogl33Mesh::Ogl33Mesh():
 {
 }
 
-Ogl33Mesh::Ogl33Mesh(std::array<GLuint, 3>&& i):
-	ids{std::move(i)}
+Ogl33Mesh::Ogl33Mesh(std::array<GLuint, 3>&& i, size_t ind):
+	ids{std::move(i)},
+	indices{ind}
 {}
 
 Ogl33Mesh::~Ogl33Mesh(){
@@ -91,9 +92,11 @@ Ogl33Mesh::~Ogl33Mesh(){
 }
 
 Ogl33Mesh::Ogl33Mesh(Ogl33Mesh&& rhs):
-	ids{std::move(rhs.ids)}
+	ids{std::move(rhs.ids)},
+	indices{rhs.indices}
 {
 	rhs.ids = {0,0,0};
+	rhs.indices = 0;
 }
 
 void Ogl33Mesh::bindVertex() const{
@@ -106,6 +109,10 @@ void Ogl33Mesh::bindUV() const{
 
 void Ogl33Mesh::bindIndex() const{
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ids[2]);
+}
+
+size_t Ogl33Mesh::indexCount() const {
+	return indices;
 }
 
 Ogl33Texture::Ogl33Texture():
@@ -132,15 +139,16 @@ void Ogl33Texture::bind() const{
 	glBindTexture(GL_TEXTURE_2D, tex_id);
 }
 
-Ogl33Program::Ogl33Program(GLuint p_id, GLuint tex_id, GLuint mvp_id):
+Ogl33Program::Ogl33Program(GLuint p_id, GLuint tex_id, GLuint mvp_id, GLuint layer_id):
 	program_id{p_id},
 	texture_uniform{tex_id},
-	mvp_uniform{mvp_id}
+	mvp_uniform{mvp_id},
+	layer_uniform{layer_id}
 {
 }
 
 Ogl33Program::Ogl33Program():
-	Ogl33Program(0,0,0)
+	Ogl33Program(0,0,0,0)
 {}
 
 Ogl33Program::~Ogl33Program(){
@@ -152,11 +160,13 @@ Ogl33Program::~Ogl33Program(){
 Ogl33Program::Ogl33Program(Ogl33Program&& rhs):
 	program_id{rhs.program_id},
 	texture_uniform{rhs.texture_uniform},
-	mvp_uniform{rhs.mvp_uniform}
+	mvp_uniform{rhs.mvp_uniform},
+	layer_uniform{rhs.layer_uniform}
 {
 	rhs.program_id = 0;
 	rhs.texture_uniform = 0;
 	rhs.mvp_uniform = 0;
+	rhs.layer_uniform = 0;
 }
 
 void Ogl33Program::setTexture(const Ogl33Texture& tex){
@@ -177,6 +187,14 @@ void Ogl33Program::setMesh(const Ogl33Mesh& mesh){
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, static_cast<void *>(0));
 
 	mesh.bindIndex();
+}
+
+void Ogl33Program::setLayer(float layer){
+	glUniform1f(layer_uniform, layer);
+}
+
+void Ogl33Program::setLayer(int16_t layer){
+	setLayer(static_cast<float>(layer) / INT16_MAX);
 }
 
 void Ogl33Program::use(){
@@ -426,7 +444,7 @@ Ogl33RenderTexture* Ogl33RenderTargetStorage::getRenderTexture(const RenderTextu
 
 RenderObjectId Ogl33Scene::createObject(const RenderPropertyId& rp_id){
 	RenderObjectId id = searchForFreeId(objects);
-	objects.insert(std::make_pair(id, RenderObject{rp_id, 0.f, 0.f, 0.f}));
+	objects.insert(std::make_pair(id, RenderObject{rp_id, 0.f, 0.f, 0.f, 0.f}));
 	return id;
 }
 
@@ -462,6 +480,7 @@ void Ogl33Scene::visit(const Ogl33Camera&, std::vector<RenderObject*>& render_qu
 void Ogl33RenderStage::renderOne(Ogl33Program& program, Ogl33RenderProperty& property, Ogl33Scene::RenderObject& object, Ogl33Mesh& mesh, Ogl33Texture& texture, Matrix<float, 3, 3>& vp){
 	program.setMesh(mesh);
 	program.setTexture(texture);
+	program.setLayer(object.layer);
 	Matrix<float, 3, 3> mvp;
 	float cos_a = cos(object.angle);
 	float sin_a = sin(object.angle);
@@ -477,7 +496,7 @@ void Ogl33RenderStage::renderOne(Ogl33Program& program, Ogl33RenderProperty& pro
 
 	program.setMvp(mvp);
 
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0L);
+	glDrawElements(GL_TRIANGLES, mesh.indexCount(), GL_UNSIGNED_INT, 0L);
 }
 
 void Ogl33RenderStage::render(Ogl33Render& render){
@@ -609,7 +628,7 @@ MeshId Ogl33Render::createMesh(const MeshData& data){
 
 	MeshId m_id = searchForFreeId(meshes);
 
-	meshes.insert(std::make_pair(m_id,Ogl33Mesh{std::move(ids)}));
+	meshes.insert(std::make_pair(m_id,Ogl33Mesh{std::move(ids), data.indices.size()}));
 	return m_id;
 }
 
@@ -635,8 +654,8 @@ TextureId Ogl33Render::createTexture(const Image& image){
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.pixels.data());
 
@@ -798,10 +817,11 @@ ProgramId Ogl33Render::createProgram(const std::string& vertex_src, const std::s
 
 	GLuint mvp_id = glGetUniformLocation(p_id, "mvp");
 	GLuint texture_sampler_id = glGetUniformLocation(p_id, "texture_sampler");
+	GLuint layer_id = glGetUniformLocation(p_id, "layer");
 
 	ProgramId id = searchForFreeId(programs);
 
-	programs.insert(std::make_pair(id, Ogl33Program{p_id, texture_sampler_id, mvp_id}));
+	programs.insert(std::make_pair(id, Ogl33Program{p_id, texture_sampler_id, mvp_id, layer_id}));
 
 	return id;
 }
