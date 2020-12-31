@@ -18,12 +18,12 @@ gin::Image loadFromFile(const std::string& path){
 	int32_t height = 0;
 	uint8_t* data = stbi_load(path.c_str(), &width, &height, &cmps, 4);
 
-	if((cmps <= 0 || cmps > 255 || width <= 0 || height <= 0) && data){
-		stbi_image_free(data);
+	if(!data){
 		return image;
 	}
-	if(!data){
-		image;
+	if(cmps <= 0 || cmps > 255 || width <= 0 || height <= 0){
+		stbi_image_free(data);
+		return image;
 	}
 
 	image.channels = 4;
