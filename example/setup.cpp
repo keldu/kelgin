@@ -13,9 +13,9 @@
 gin::Image loadFromFile(const std::string& path){
 	gin::Image image;
 
-	int32_t cmps;
-	int32_t width;
-	int32_t height;
+	int32_t cmps = 0;
+	int32_t width = 0;
+	int32_t height = 0;
 	uint8_t* data = stbi_load(path.c_str(), &width, &height, &cmps, 4);
 
 	if(cmps <= 0 || cmps > 255 || width <= 0 || height <= 0){
