@@ -33,14 +33,14 @@ Ogl33Camera::Ogl33Camera()
 void Ogl33Camera::setOrtho(float left, float right, float bottom, float top){
 	projection_matrix(0,0) = 2.0 / (right - left);
 	projection_matrix(0,1) = 0.f;
-	projection_matrix(0,2) = 0.f;
+	projection_matrix(0,2) = -(right+left) / (right-left);
 
 	projection_matrix(1,0) = 0.f;
 	projection_matrix(1,1) = 2.0f / (top-bottom);
-	projection_matrix(1,2) = 0.f;
+	projection_matrix(1,2) = -(top+bottom)/ (top-bottom);
 
-	projection_matrix(2,0) = -(right - left) / (right + left);
-	projection_matrix(2,1) = -(top-bottom) / (top+bottom);
+	projection_matrix(2,0) = 0.f;
+	projection_matrix(2,1) = 0.f;
 	projection_matrix(2,2) = 1.0f;
 }
 
