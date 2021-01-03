@@ -30,7 +30,7 @@ Ogl33Camera::Ogl33Camera()
 	}
 }
 
-void Ogl33Camera::setOrtho(float left, float right, float bottom, float top, float near, float far){
+void Ogl33Camera::setOrtho(float left, float right, float bottom, float top){
 	projection_matrix(0,0) = 2.0 / (right - left);
 	projection_matrix(0,1) = 0.f;
 	projection_matrix(0,2) = 0.f;
@@ -39,8 +39,8 @@ void Ogl33Camera::setOrtho(float left, float right, float bottom, float top, flo
 	projection_matrix(1,1) = 2.0f / (top-bottom);
 	projection_matrix(1,2) = 0.f;
 
-	projection_matrix(2,0) = 0.f;
-	projection_matrix(2,1) = 0.f;
+	projection_matrix(2,0) = -(right - left) / (right + left);
+	projection_matrix(2,1) = -(top-bottom) / (top+bottom);
 	projection_matrix(2,2) = 1.0f;
 }
 
@@ -838,10 +838,10 @@ RenderCameraId Ogl33Render::createCamera(){
 	return id;
 }
 
-void Ogl33Render::setCameraOrthographic(const RenderCameraId& id, float l, float r, float t, float b, float n, float f){
+void Ogl33Render::setCameraOrthographic(const RenderCameraId& id, float l, float r, float t, float b){
 	auto find = cameras.find(id);
 	if(find != cameras.end()){
-		find->second.setOrtho(l, r, t , b, n , f);
+		find->second.setOrtho(l, r, t , b);
 	}
 }
 

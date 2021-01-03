@@ -20,13 +20,6 @@
 #include "common/math.h"
 
 namespace gin {
-/**
-* Helper parent
-*/
-class Ogl33Resource {
-protected:
-public:
-};
 class Ogl33Render;
 class Ogl33RenderProperty;
 class Ogl33RenderObject;
@@ -41,7 +34,7 @@ public:
 	void setViewPosition(float x, float y);
 	void setViewRotation(float angle);
 
-	void setOrtho(float left, float right, float top, float bot, float near, float far);
+	void setOrtho(float left, float right, float top, float bot);
 
 	const Matrix<float, 3,3>& view() const;
 	const Matrix<float, 3,3>& projection() const;
@@ -60,7 +53,7 @@ public:
 };
 
 /// @todo Implement usage of VertexArrayObjects
-class Ogl33Mesh final : public Ogl33Resource {
+class Ogl33Mesh {
 private:
 	std::array<GLuint,3> ids;
 	size_t indices;
@@ -82,7 +75,40 @@ public:
 	size_t indexCount() const;
 };
 
-class Ogl33Texture final : public Ogl33Resource {
+class Ogl33Mesh3d {
+private:
+	std::array<GLuint, 4> ids;
+	size_t indices;
+
+public:
+	Ogl33Mesh3d();
+	Ogl33Mesh3d(std::array<GLuint, 4>&&, size_t);
+	~Ogl33Mesh3d();
+	Ogl33Mesh3d(Ogl33Mesh3d&&);
+
+	void bindVertex() const;
+	void bindUV() const;
+	void bindNormals() const;
+	void bindIndex() const;
+
+	size_t indexCount() const;
+};
+
+class Ogl33Camera3d {
+private:
+	Matrix<float, 4, 4> projection_matrix;
+	Matrix<float, 4, 4> view_matrix;
+public:
+	Ogl33Camera3d();
+
+	void setOrtho(float left, float right, float top, float bottom, float near, float far);
+	void setViewPosition(float x, float y, float z);
+
+	const Matrix<float, 4, 4>& projection() const;
+	const Matrix<float, 4, 4>& view() const;
+};
+
+class Ogl33Texture {
 private:
 	GLuint tex_id;
 public:
@@ -94,7 +120,23 @@ public:
 	void bind() const;
 };
 
-class Ogl33Program final : public Ogl33Resource {
+class Ogl33Program3d {
+private:
+	GLuint program_id;
+
+	GLuint texture_uniform;
+	GLuint mvp_uniform;
+public:
+	Ogl33Program3d();
+	Ogl33Program3d(GLuint, GLuint, GLuint);
+	~Ogl33Program3d();
+
+	void setTexture(const Ogl33Texture&);
+	void setMvp(const Matrix<float, 4, 4>&);
+	void setMesh(const Ogl33Mesh3d&);
+};
+
+class Ogl33Program {
 private:
 	GLuint program_id;
 
@@ -294,7 +336,7 @@ public:
 	RenderCameraId createCamera() override;
 	void setCameraPosition(const RenderCameraId&, float x, float y) override;
 	void setCameraRotation(const RenderCameraId&, float alpha) override;
-	void setCameraOrthographic(const RenderCameraId&, float, float, float, float, float, float) override;
+	void setCameraOrthographic(const RenderCameraId&, float, float, float, float) override;
 	Conveyor<RenderEvent::Events> listenToWindowEvents(const RenderWindowId&) override;
 	void destroyCamera(const RenderCameraId&) override;
 

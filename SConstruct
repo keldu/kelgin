@@ -40,6 +40,11 @@ env.sources = []
 env.headers = []
 env.objects = []
 
+env.render_headers = []
+
+env.common_sources = []
+env.common_headers = []
+
 env.daemon_sources = []
 env.daemon_headers = []
 env.daemon_objects = []
@@ -50,9 +55,11 @@ env.example_objects = []
 
 Export('env')
 SConscript('source/SConscript')
+SConscript('common/SConscript')
 SConscript('daemon/SConscript')
 SConscript('example/SConscript')
 SConscript('plugins/SConscript')
+
 
 # Library build
 
@@ -107,4 +114,6 @@ env.Alias('all', ['library','plugins','daemon','example_setup'])
 # env.Alias('test', env.test_program)
 env.Install('/usr/local/lib/', [env.library_shared, env.library_static])
 env.Install('/usr/local/include/kelgin/graphics/', [env.headers])
+env.Install('/usr/local/include/kelgin/graphics/render/', [env.render_headers])
+env.Install('/usr/local/include/kelgin/graphics/common/', [env.common_headers])
 env.Alias('install', '/usr/local/')

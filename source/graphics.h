@@ -1,8 +1,8 @@
 #pragma once
 
-#include "service.h"
-#include "dynamic.h"
-#include "render/render.h"
+#include "./service.h"
+#include "./dynamic.h"
+#include "./render/render.h"
 
 #include <kelgin/common.h>
 #include <kelgin/error.h>
