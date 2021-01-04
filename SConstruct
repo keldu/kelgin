@@ -55,7 +55,6 @@ env.example_objects = []
 
 Export('env')
 SConscript('source/SConscript')
-SConscript('common/SConscript')
 SConscript('daemon/SConscript')
 SConscript('example/SConscript')
 SConscript('plugins/SConscript')

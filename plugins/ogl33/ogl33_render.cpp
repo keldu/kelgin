@@ -826,6 +826,43 @@ ProgramId Ogl33Render::createProgram(const std::string& vertex_src, const std::s
 	return id;
 }
 
+namespace {
+const std::string default_vertex_shader_program = R"(#version 330 core
+
+layout (location = 0) in vec2 vertices;
+layout (location = 1) in vec2 uvs;
+
+out vec2 tex_coord;
+
+uniform float layer;
+uniform mat3 mvp;
+
+void main(){
+	vec3 transformed = mvp * vec3(vertices, 1.0);
+	gl_Position.xyz = vec3(transformed.x, transformed.y, layer);
+	gl_Position.w = transformed.z;
+	tex_coord = uvs;
+}
+)";
+const std::string default_fragment_shader_program = R"(#version 330 core
+
+in vec2 tex_coord;
+
+out vec4 colour;
+
+uniform sampler2D texture_sampler;
+
+void main(){
+	vec4 tex_colour = texture(texture_sampler, tex_coord);
+	colour = tex_colour;
+}
+)";
+}
+
+ProgramId Ogl33Render::createProgram(){
+	return createProgram(default_vertex_shader_program, default_fragment_shader_program);
+}
+
 void Ogl33Render::destroyProgram(const ProgramId& id){
 	programs.erase(id);
 }

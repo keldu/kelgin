@@ -104,6 +104,7 @@ public:
 
 	// Program Operations
 	virtual ProgramId createProgram(const std::string& vertex_src, const std::string& fragment_src) = 0;
+	virtual ProgramId createProgram() = 0;
 	virtual void destroyProgram(const ProgramId&) = 0;
 
 	// Camera Operations
