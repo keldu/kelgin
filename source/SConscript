@@ -13,5 +13,5 @@ env.sources += sorted(glob.glob(dir_path + "/*.cpp"))
 env.headers += sorted(glob.glob(dir_path + "/*.h"))
 env.render_headers += sorted(glob.glob(dir_path + "/render/*.h"))
 
-env.common_sources += sorted(glob.glob(dir_path + "common/*.cpp"))
-env.common_headers += sorted(glob.glob(dir_path + "common/*.h"))
+env.common_sources += sorted(glob.glob(dir_path + "/common/*.cpp"))
+env.common_headers += sorted(glob.glob(dir_path + "/common/*.h"))
