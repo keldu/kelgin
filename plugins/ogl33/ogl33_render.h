@@ -242,7 +242,8 @@ public:
 	Ogl33RenderTexture* getRenderTexture(const RenderTextureId&);
 };
 
-struct Ogl33RenderProperty {
+class Ogl33RenderProperty {
+public:
 	MeshId mesh_id;
 	TextureId texture_id;
 };

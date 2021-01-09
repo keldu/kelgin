@@ -46,7 +46,7 @@ ServiceThread<T>::~ServiceThread(){
 
 template<typename T>
 void ServiceThread<T>::run(){
-	AsyncIoContext aio;
-	srv.run(aio);
+	// AsyncIoContext aio;
+	// srv.run(aio);
 }
 }
