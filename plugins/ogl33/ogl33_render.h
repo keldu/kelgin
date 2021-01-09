@@ -72,6 +72,8 @@ public:
 	void bindUV() const;
 	void bindIndex() const;
 
+	void setData(const MeshData& data);
+
 	size_t indexCount() const;
 };
 
@@ -321,6 +323,7 @@ public:
 	Ogl33Texture* getTexture(const TextureId&);
 
 	MeshId createMesh(const MeshData&) override;
+	void setMeshData(const MeshId&, const MeshData&) override;
 	void destroyMesh(const MeshId&) override;
 
 	TextureId createTexture(const Image&) override;

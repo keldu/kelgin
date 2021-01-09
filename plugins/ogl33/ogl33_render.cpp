@@ -111,6 +111,24 @@ void Ogl33Mesh::bindIndex() const{
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ids[2]);
 }
 
+void Ogl33Mesh::setData(const MeshData& data){
+	glBindBuffer(GL_ARRAY_BUFFER, ids[0]);
+	glBufferData(GL_ARRAY_BUFFER, data.vertices.size() * sizeof(float), data.vertices.data(), GL_DYNAMIC_DRAW);
+
+	glBindBuffer(GL_ARRAY_BUFFER, ids[1]);
+	glBufferData(GL_ARRAY_BUFFER, data.uvs.size() * sizeof(float), data.uvs.data(), GL_DYNAMIC_DRAW);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ids[2]);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, data.indices.size() * sizeof(unsigned int), data.indices.data(), GL_DYNAMIC_DRAW);
+
+// This is unnecessary in a correct renderer impl
+#ifndef NDEBUG
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+#endif
+	indices = data.indices.size();
+}
+
 size_t Ogl33Mesh::indexCount() const {
 	return indices;
 }
@@ -630,6 +648,15 @@ MeshId Ogl33Render::createMesh(const MeshData& data){
 
 	meshes.insert(std::make_pair(m_id,Ogl33Mesh{std::move(ids), data.indices.size()}));
 	return m_id;
+}
+
+void Ogl33Render::setMeshData(const MeshId& id, const MeshData& data){
+	auto find = meshes.find(id);
+	if(find == meshes.end()){
+		return;
+	}
+
+	find->second.setData(data);
 }
 
 void Ogl33Render::destroyMesh(const MeshId& id){

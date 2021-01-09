@@ -122,7 +122,7 @@ int main() {
 				aspect = static_cast<float>(arg.width) / static_cast<float>(arg.height);
 				render->setCameraOrthographic(camera_id, - 2.0f * aspect*zoom, 2.0f * aspect*zoom,  -2.0f*zoom, 2.0f*zoom);
 			}else if constexpr(std::is_same_v<T, RenderEvent::Keyboard>){
-				std::cout<<"Keypress: "<<arg.key_code<<" "<<arg.pressed<<std::endl;
+				std::cout<<"Keypress: "<<arg.key_code<<" "<<arg.pressed<<" "<<arg.repeat<<std::endl;
 				switch(arg.key_code){
 				case 9:
 					if(!arg.pressed) running = false;

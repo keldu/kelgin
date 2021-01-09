@@ -89,6 +89,7 @@ public:
 
 	// Mesh Operations
 	virtual MeshId createMesh(const MeshData&) = 0;
+	virtual void setMeshData(const MeshId&, const MeshData&) = 0;
 	virtual void destroyMesh(const MeshId&) = 0;
 
 	// Texture Operations
