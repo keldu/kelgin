@@ -75,64 +75,6 @@ void Ogl33Viewport::use(){
 	glViewport(x, y, width, height);
 }
 
-Ogl33Mesh::Ogl33Mesh():
-	ids{0,0,0}
-{
-}
-
-Ogl33Mesh::Ogl33Mesh(std::array<GLuint, 3>&& i, size_t ind):
-	ids{std::move(i)},
-	indices{ind}
-{}
-
-Ogl33Mesh::~Ogl33Mesh(){
-	if(ids[0] > 0){
-		glDeleteBuffers(3, &ids[0]);
-	}
-}
-
-Ogl33Mesh::Ogl33Mesh(Ogl33Mesh&& rhs):
-	ids{std::move(rhs.ids)},
-	indices{rhs.indices}
-{
-	rhs.ids = {0,0,0};
-	rhs.indices = 0;
-}
-
-void Ogl33Mesh::bindVertex() const{
-	glBindBuffer(GL_ARRAY_BUFFER, ids[0]);
-}
-
-void Ogl33Mesh::bindUV() const{
-	glBindBuffer(GL_ARRAY_BUFFER, ids[1]);
-}
-
-void Ogl33Mesh::bindIndex() const{
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ids[2]);
-}
-
-void Ogl33Mesh::setData(const MeshData& data){
-	glBindBuffer(GL_ARRAY_BUFFER, ids[0]);
-	glBufferData(GL_ARRAY_BUFFER, data.vertices.size() * sizeof(float), data.vertices.data(), GL_DYNAMIC_DRAW);
-
-	glBindBuffer(GL_ARRAY_BUFFER, ids[1]);
-	glBufferData(GL_ARRAY_BUFFER, data.uvs.size() * sizeof(float), data.uvs.data(), GL_DYNAMIC_DRAW);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ids[2]);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, data.indices.size() * sizeof(unsigned int), data.indices.data(), GL_DYNAMIC_DRAW);
-
-// This is unnecessary in a correct renderer impl
-#ifndef NDEBUG
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-#endif
-	indices = data.indices.size();
-}
-
-size_t Ogl33Mesh::indexCount() const {
-	return indices;
-}
-
 Ogl33Texture::Ogl33Texture():
 	Ogl33Texture(0)
 {}
@@ -511,6 +453,8 @@ void Ogl33RenderStage::renderOne(Ogl33Program& program, Ogl33RenderProperty& pro
 	mvp(2,2) = 1.f;
 
 	mvp = vp * mvp;
+
+	std::cout<<"Arg"<<std::endl;
 
 	program.setMvp(mvp);
 
@@ -975,6 +919,20 @@ RenderPropertyId Ogl33Render::createProperty(const MeshId& mesh, const TextureId
 	return id;
 }
 
+void Ogl33Render::setPropertyMesh(const RenderPropertyId& id, const MeshId& mesh_id) {
+	auto find = render_properties.find(id);
+	if(find != render_properties.end()){
+		find->second.mesh_id = mesh_id;
+	}
+}
+
+void Ogl33Render::setPropertyTexture(const RenderPropertyId& id, const TextureId& texture_id) {
+	auto find = render_properties.find(id);
+	if(find != render_properties.end()){
+		find->second.texture_id = texture_id;
+	}
+}
+
 void Ogl33Render::destroyProperty(const RenderPropertyId& id){
 	render_properties.erase(id);
 }
@@ -1017,6 +975,46 @@ void Ogl33Render::setObjectRotation(const RenderSceneId& scene, const RenderObje
 
 void Ogl33Render::destroyScene(const RenderSceneId& id){
 	scenes.erase(id);
+}
+
+Mesh3dId Ogl33Render::createMesh3d(const Mesh3dData& data){
+	Mesh3dId id = searchForFreeId(meshes_3d);
+	std::array<GLuint,2> ids;
+
+	/// @todo ensure that the current render context is bound
+
+	if( data.vertices.size() != data.normals.size() || data.vertices.size() != data.uvs.size()){
+		return 0;
+	}
+
+	std::vector<float> packed_mesh;
+	packed_mesh.reserve(3 * data.vertices.size());
+	for(size_t i = 0; i < data.vertices.size(); ++i){
+		packed_mesh.push_back(data.vertices.at(i));
+		packed_mesh.push_back(data.uvs.at(i));
+		packed_mesh.push_back(data.normals.at(i));
+	}
+
+	glGenBuffers(2, &ids[0]);
+
+	glBindBuffer(GL_ARRAY_BUFFER, ids[0]);
+	glBufferData(GL_ARRAY_BUFFER, packed_mesh.size() * sizeof(float), packed_mesh.data(), GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ids[1]);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, data.indices.size() * sizeof(unsigned int), data.indices.data(), GL_STATIC_DRAW);
+
+// This is unnecessary in a correct renderer impl
+#ifndef NDEBUG
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+#endif
+
+	meshes_3d.insert(std::make_pair(id, Ogl33Mesh3d{std::move(ids), data.indices.size()}));
+	return id;
+}
+
+void Ogl33Render::destroyMesh3d(const Mesh3dId& id){
+	meshes_3d.erase(id);
 }
 
 void Ogl33Render::stepRenderTargetTimes(const std::chrono::steady_clock::time_point& tp){

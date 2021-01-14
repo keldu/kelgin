@@ -79,18 +79,16 @@ public:
 
 class Ogl33Mesh3d {
 private:
-	std::array<GLuint, 4> ids;
+	std::array<GLuint, 2> ids;
 	size_t indices;
 
 public:
 	Ogl33Mesh3d();
-	Ogl33Mesh3d(std::array<GLuint, 4>&&, size_t);
+	Ogl33Mesh3d(std::array<GLuint, 2>&&, size_t);
 	~Ogl33Mesh3d();
 	Ogl33Mesh3d(Ogl33Mesh3d&&);
 
-	void bindVertex() const;
-	void bindUV() const;
-	void bindNormals() const;
+	void bindAttribute() const;
 	void bindIndex() const;
 
 	size_t indexCount() const;
@@ -300,6 +298,9 @@ private:
 	std::unordered_map<RenderPropertyId, Ogl33RenderProperty> render_properties;
 	std::unordered_map<RenderSceneId, Own<Ogl33Scene>> scenes;
 
+	// 3D Storage
+	std::unordered_map<Mesh3dId, Ogl33Mesh3d> meshes_3d;
+
 	std::unordered_multimap<RenderTargetId, RenderStageId> render_target_stages;
 
 	struct RenderTargetUpdate {
@@ -353,6 +354,8 @@ public:
 	void destroyViewport(const RenderViewportId&) override;
 
 	RenderPropertyId createProperty(const MeshId&, const TextureId&) override;
+	void setPropertyMesh(const RenderPropertyId&, const MeshId& id) override;
+	void setPropertyTexture(const RenderPropertyId&, const TextureId& id) override;
 	void destroyProperty(const RenderPropertyId&) override;
 
 	RenderSceneId createScene() override;
@@ -361,6 +364,12 @@ public:
 	void setObjectPosition(const RenderSceneId&, const RenderObjectId&, float, float) override;
 	void setObjectRotation(const RenderSceneId&, const RenderObjectId&, float) override;
 	void destroyScene(const RenderSceneId&) override;
+
+	// 3D
+
+
+	Mesh3dId createMesh3d(const Mesh3dData&) override;
+	void destroyMesh3d(const Mesh3dId&) override;
 
 	void step(const std::chrono::steady_clock::time_point&) override;
 	void flush() override;

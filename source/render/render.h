@@ -36,6 +36,7 @@ public:
 };
 
 class Mesh3dData {
+public:
 	std::vector<float> vertices;
 	std::vector<float> uvs;
 	std::vector<float> normals;
@@ -126,6 +127,8 @@ public:
 
 	// Property Operations
 	virtual RenderPropertyId createProperty(const MeshId&, const TextureId&) = 0;
+	virtual void setPropertyMesh(const RenderPropertyId&, const MeshId& id) = 0;
+	virtual void setPropertyTexture(const RenderPropertyId&, const TextureId& id) = 0;
 	virtual void destroyProperty(const RenderPropertyId&) = 0;
 
 	// Scene and Object Operations
@@ -137,8 +140,8 @@ public:
 	virtual void destroyScene(const RenderSceneId&) = 0;
 
 	// Mesh3d Operations
-	// virtual Mesh3dId createMesh3d(const Mesh3dData&) = 0;
-	// virtual void destroyMesh3d(const Mesh3dId&) = 0;
+	virtual Mesh3dId createMesh3d(const Mesh3dData&) = 0;
+	virtual void destroyMesh3d(const Mesh3dId&) = 0;
 	
 	// Camera3d Operations
 	// virtual RenderCamera3dId createCamera3d() = 0;
