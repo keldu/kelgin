@@ -148,6 +148,8 @@ int main() {
 				}
 			}else if constexpr(std::is_same_v<T, RenderEvent::Mouse>){
 				std::cout<<"Mousepress: "<<arg.button<<" "<<arg.pressed<<std::endl;
+			}else if constexpr(std::is_same_v<T, RenderEvent::MouseMove>){
+				std::cout<<"Mouse move: "<<arg.x<<" "<<arg.y<<std::endl;
 			}
 		},event);
 	}).sink([](const Error& error){return error;});

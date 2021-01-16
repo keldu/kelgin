@@ -211,7 +211,7 @@ Conveyor<RenderEvent::Events> Ogl33Window::listenToWindowEvents(){
 			}else if constexpr(std::is_same_v<T, Window::Event::Mouse>){
 				return RenderEvent::Mouse{arg.button_mask, arg.pressed};
 			}else if constexpr(std::is_same_v<T, Window::Event::MouseMove>){
-				return RenderEvent::MouseMove{};
+				return RenderEvent::MouseMove{arg.x, arg.y};
 			}else{
 				static_assert(always_false_v<T>, "Type in Visitor not exhausted");
 			}
@@ -453,8 +453,6 @@ void Ogl33RenderStage::renderOne(Ogl33Program& program, Ogl33RenderProperty& pro
 	mvp(2,2) = 1.f;
 
 	mvp = vp * mvp;
-
-	std::cout<<"Arg"<<std::endl;
 
 	program.setMvp(mvp);
 

@@ -70,7 +70,8 @@ struct RenderEvent {
 	};
 
 	struct MouseMove {
-
+		uint32_t x;
+		uint32_t y;
 	};
 
 	using Events = std::variant<Keyboard, Resize, Mouse, MouseMove>;
