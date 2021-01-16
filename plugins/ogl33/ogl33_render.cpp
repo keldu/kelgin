@@ -228,7 +228,7 @@ void Ogl33Window::beginRender(){
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(0,0,width(),height());
 	glClearColor(clear_colour[0], clear_colour[1], clear_colour[2], clear_colour[3]);
-	glClear(GL_COLOR_BUFFER_BIT /*| GL_DEPTH_BUFFER_BIT*/);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void Ogl33Window::endRender(){
@@ -454,8 +454,6 @@ void Ogl33RenderStage::renderOne(Ogl33Program& program, Ogl33RenderProperty& pro
 
 	mvp = vp * mvp;
 
-	std::cout<<"Arg"<<std::endl;
-
 	program.setMvp(mvp);
 
 	glDrawElements(GL_TRIANGLES, mesh.indexCount(), GL_UNSIGNED_INT, 0L);
@@ -465,14 +463,17 @@ void Ogl33RenderStage::render(Ogl33Render& render){
 	std::vector<Ogl33Scene::RenderObject*> draw_queue;
 
 	Ogl33Scene* scene = render.getScene(scene_id);
+	assert(scene);
 	if(!scene){
 		return;
 	}
 	Ogl33Camera* camera = render.getCamera(camera_id);
+	assert(camera);
 	if(!camera){
 		return;
 	}
 	Ogl33Program* program = render.getProgram(program_id);
+	assert(program);
 	if(!program){
 		return;
 	}
@@ -491,14 +492,17 @@ void Ogl33RenderStage::render(Ogl33Render& render){
 
 	for(auto& iter : draw_queue){
 		Ogl33RenderProperty* property = render.getProperty(iter->id);
+		assert(property);
 		if(!property){
 			continue;
 		}
 		Ogl33Mesh* mesh = render.getMesh(property->mesh_id);
+		assert(mesh);
 		if(!mesh){
 			continue;
 		}
 		Ogl33Texture* texture = render.getTexture(property->texture_id);
+		assert(texture);
 		if(!texture){
 			continue;
 		}
@@ -1044,6 +1048,7 @@ void Ogl33Render::step(const std::chrono::steady_clock::time_point& tp){
 
 	stepRenderTargetTimes(tp);
 
+
 	for(;!render_target_draw_tasks.empty(); render_target_draw_tasks.pop()){
 		auto front = render_target_draw_tasks.front();
 
@@ -1056,6 +1061,7 @@ void Ogl33Render::step(const std::chrono::steady_clock::time_point& tp){
 		target->beginRender();
 
 		auto range = render_target_stages.equal_range(front);
+
 		for(auto iter = range.first; iter != range.second; ++iter){
 			auto stage_iter = render_stages.find(iter->second);
 			if(stage_iter != render_stages.end()){

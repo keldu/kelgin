@@ -251,11 +251,11 @@ public:
 class Ogl33Scene {
 public:
 	struct RenderObject {
-		RenderPropertyId id;
-		float x;
-		float y;
-		float angle;
-		float layer;
+		RenderPropertyId id = 0;
+		float x = 0.f;
+		float y = 0.f;
+		float angle = 0.f;
+		float layer = 0.f;
 	};
 private:
 	std::unordered_map<RenderObjectId, RenderObject> objects;
