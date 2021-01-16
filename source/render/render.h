@@ -138,6 +138,7 @@ public:
 	virtual void destroyObject(const RenderSceneId&, const RenderObjectId&) = 0;
 	virtual void setObjectPosition(const RenderSceneId&, const RenderObjectId&, float, float) = 0;
 	virtual void setObjectRotation(const RenderSceneId&, const RenderObjectId&, float) = 0;
+	virtual void setObjectVisibility(const RenderSceneId&, const RenderObjectId&, bool) = 0;
 	virtual void destroyScene(const RenderSceneId&) = 0;
 
 	// Mesh3d Operations

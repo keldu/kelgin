@@ -256,6 +256,7 @@ public:
 		float y = 0.f;
 		float angle = 0.f;
 		float layer = 0.f;
+		bool visible = true;
 	};
 private:
 	std::unordered_map<RenderObjectId, RenderObject> objects;
@@ -265,6 +266,7 @@ public:
 	void destroyObject(const RenderObjectId&);
 	void setObjectPosition(const RenderObjectId&, float, float);
 	void setObjectRotation(const RenderObjectId&, float);
+	void setObjectVisibility(const RenderObjectId&, bool);
 
 	void visit(const Ogl33Camera&, std::vector<RenderObject*>&);
 };
@@ -363,6 +365,7 @@ public:
 	void destroyObject(const RenderSceneId&, const RenderObjectId&) override;
 	void setObjectPosition(const RenderSceneId&, const RenderObjectId&, float, float) override;
 	void setObjectRotation(const RenderSceneId&, const RenderObjectId&, float) override;
+	void setObjectVisibility(const RenderSceneId&, const RenderObjectId&, bool) override;
 	void destroyScene(const RenderSceneId&) override;
 
 	// 3D

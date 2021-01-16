@@ -404,7 +404,7 @@ Ogl33RenderTexture* Ogl33RenderTargetStorage::getRenderTexture(const RenderTextu
 
 RenderObjectId Ogl33Scene::createObject(const RenderPropertyId& rp_id){
 	RenderObjectId id = searchForFreeId(objects);
-	objects.insert(std::make_pair(id, RenderObject{rp_id, 0.f, 0.f, 0.f, 0.f}));
+	objects.insert(std::make_pair(id, RenderObject{rp_id, 0.f, 0.f, 0.f, 0.f, true}));
 	return id;
 }
 
@@ -427,13 +427,22 @@ void Ogl33Scene::setObjectRotation(const RenderObjectId& id, float angle){
 	}
 }
 
+void Ogl33Scene::setObjectVisibility(const RenderObjectId& id, bool visible){
+	auto find = objects.find(id);
+	if(find != objects.end()){
+		find->second.visible = visible;
+	}
+}
+
 /**
 * @todo design better interface and check occlusion
 */
 void Ogl33Scene::visit(const Ogl33Camera&, std::vector<RenderObject*>& render_queue){
 	render_queue.reserve(objects.size());
 	for(auto& iter: objects){
-		render_queue.push_back(&iter.second);
+		if(iter.second.visible){
+			render_queue.push_back(&iter.second);
+		}
 	}
 }
 
@@ -483,12 +492,6 @@ void Ogl33RenderStage::render(Ogl33Render& render){
 	program->use();
 
 	Matrix<float, 3, 3> vp = camera->projection()*camera->view();
-
-	for(size_t i = 0; i < 3; ++i){
-		for(size_t j = 0; j < 3; ++j){
-
-		}
-	}
 
 	for(auto& iter : draw_queue){
 		Ogl33RenderProperty* property = render.getProperty(iter->id);
@@ -974,6 +977,13 @@ void Ogl33Render::setObjectRotation(const RenderSceneId& scene, const RenderObje
 	auto find = scenes.find(scene);
 	if(find != scenes.end()){
 		find->second->setObjectRotation(obj, angle);
+	}
+}
+
+void Ogl33Render::setObjectVisibility(const RenderSceneId& scene, const RenderObjectId& obj, bool visible){
+	auto find = scenes.find(scene);
+	if(find != scenes.end()){
+		find->second->setObjectVisibility(obj, visible);
 	}
 }
 
