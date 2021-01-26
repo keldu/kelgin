@@ -5,6 +5,7 @@ import os
 import os.path
 import glob
 import re
+import pkgconfig
 
 if sys.version_info < (3,):
     def isbasestring(s):
@@ -29,11 +30,17 @@ def add_kel_source_files(self, sources, filetype, lib_env=None, shared=False, ta
             sources.append( self.StaticObject( target=target_name, source=path ) )
     pass
 
-env=Environment(CPPPATH=['#source','#'],
+freetype_cflags = pkgconfig.cflags('freetype2').split(' ');
+for i in range(len(freetype_cflags)):
+    freetype_cflags[i] = freetype_cflags[i].removeprefix('-I');
+
+cflags = freetype_cflags + ['#source/', '#']
+
+env=Environment(CPPPATH=cflags,
     CXX='clang++',
     CPPDEFINES=['GIN_UNIX'],
     CXXFLAGS=['-std=c++17','-g','-Wall','-Wextra'],
-    LIBS=['kelgin','-ldl'])
+    LIBS=['kelgin','-ldl','-lfreetype'])
 env.__class__.add_source_files = add_kel_source_files
 
 env.sources = []
