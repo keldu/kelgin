@@ -18,4 +18,4 @@ for entry in os.scandir(dir_path):
 		if(os.path.exists(scons_file)):
 			SConscript(scons_file);
 
-env.Alias('plugins', plugins_env.plugins)
+env.plugins = plugins_env.plugins

@@ -64,6 +64,35 @@ const Matrix<float, 3,3>& Ogl33Camera::projection() const {
 	return projection_matrix;
 }
 
+Ogl33Camera3d::Ogl33Camera3d(){
+	for(size_t i = 0; i < 4; ++i){
+		projection_matrix(i,i) = 1.0f;
+		view_matrix(i,i) = 1.0f;
+	}
+}
+
+void Ogl33Camera3d::setOrtho(float left, float right, float top, float bottom, float near, float far){
+	/// @todo set orthographic projection
+}
+
+void Ogl33Camera3d::setViewPosition(float x, float y, float z){
+	view_matrix(0, 3) = -x;
+	view_matrix(1, 3) = -y;
+	view_matrix(2, 3) = -z;
+}
+
+void Ogl33Camera::setViewRotation(float alpha, float beta, float gamma){
+	/// @todo set rotation matrix in [0-2]x[0-2]
+}
+
+const Matrix<float, 4, 4>& Ogl33Camera3d::projection() const {
+	return projection_matrix;
+}
+
+const Matrix<float, 4, 4>& Ogl33Camera3d::view() const {
+	return view_matrix;
+}
+
 Ogl33Viewport::Ogl33Viewport(float x, float y, float width, float height):
 	x{x},
 	y{y},
@@ -783,7 +812,6 @@ ProgramId Ogl33Render::createProgram(const std::string& vertex_src, const std::s
 		std::cerr<<"Failed to link "<<error_msg<<std::endl;
 		// log_error(std::string{"Failed to compile "} + error_msg);
 		
-		
 
 		return 0;
 	}
@@ -824,6 +852,35 @@ void main(){
 )";
 const std::string default_fragment_shader_program = R"(#version 330 core
 
+in vec2 tex_coord;
+
+out vec4 colour;
+
+uniform sampler2D texture_sampler;
+
+void main(){
+	vec4 tex_colour = texture(texture_sampler, tex_coord);
+	colour = tex_colour;
+}
+)";
+
+const std::string default_vertex_shader_program_3d = R"(#version 330 core
+
+layout (location = 0) in vec3 vertices;
+layout (location = 1) in vec2 uvs;
+layout (location = 2) in vec3 normals;
+
+out vec2 tex_coord;
+
+uniform mat4 mvp;
+
+void main(){
+	tex_coord = uvs;
+}
+
+)";
+
+const std::string default_fragment_shader_program_3d = R"(#version 330 core
 in vec2 tex_coord;
 
 out vec4 colour;
@@ -997,22 +1054,14 @@ Mesh3dId Ogl33Render::createMesh3d(const Mesh3dData& data){
 
 	/// @todo ensure that the current render context is bound
 
-	if( data.vertices.size() != data.normals.size() || data.vertices.size() != data.uvs.size()){
-		return 0;
-	}
+	GLuint vao;
 
-	std::vector<float> packed_mesh;
-	packed_mesh.reserve(3 * data.vertices.size());
-	for(size_t i = 0; i < data.vertices.size(); ++i){
-		packed_mesh.push_back(data.vertices.at(i));
-		packed_mesh.push_back(data.uvs.at(i));
-		packed_mesh.push_back(data.normals.at(i));
-	}
+	glGenVertexArrays(1, &vao);
 
 	glGenBuffers(2, &ids[0]);
 
 	glBindBuffer(GL_ARRAY_BUFFER, ids[0]);
-	glBufferData(GL_ARRAY_BUFFER, packed_mesh.size() * sizeof(float), packed_mesh.data(), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, data.vertices.size() * sizeof(Vertex), data.vertices.data(), GL_STATIC_DRAW);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ids[1]);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, data.indices.size() * sizeof(unsigned int), data.indices.data(), GL_STATIC_DRAW);
@@ -1023,13 +1072,24 @@ Mesh3dId Ogl33Render::createMesh3d(const Mesh3dData& data){
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 #endif
 
-	meshes_3d.insert(std::make_pair(id, Ogl33Mesh3d{std::move(ids), data.indices.size()}));
+	meshes_3d.insert(std::make_pair(id, Ogl33Mesh3d{vao, std::move(ids), data.indices.size()}));
 	return id;
 }
 
 void Ogl33Render::destroyMesh3d(const Mesh3dId& id){
 	meshes_3d.erase(id);
 }
+
+RenderProperty3dId Ogl33Render::createProperty3d(const Mesh3dId& mesh, const TextureId& texture){
+	/// @todo
+	return 0;
+}
+
+void Ogl33Render::destroyProperty3d(const RenderProperty3dId& id){
+	/// @todo
+}
+
+
 
 void Ogl33Render::stepRenderTargetTimes(const std::chrono::steady_clock::time_point& tp){
 	for(auto& iter : render_target_times){

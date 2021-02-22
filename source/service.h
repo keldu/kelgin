@@ -10,7 +10,7 @@ class Service {
 public:
 	virtual ~Service() = default;
 
-	virtual void run(AsyncIoContext& aio) = 0;
+	virtual void run(AsyncIoContext& aio, WaitScope& wait_scope) = 0;
 	virtual void stop() = 0;
 };
 

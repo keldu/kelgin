@@ -111,14 +111,14 @@ LowLevelRender* Graphics::getRenderer(AsyncIoProvider& provider, const std::stri
 
 GraphicsService::GraphicsService(Graphics&& gr):graphics{std::move(gr)}{}
 
-void GraphicsService::run(AsyncIoContext& async){
+void GraphicsService::run(AsyncIoContext& async, WaitScope& wait_scope){
 	while(running){
-		async.wait_scope.wait(std::chrono::seconds{1});
+		wait_scope.wait(std::chrono::seconds{1});
 	}
 }
 
-int GraphicsService::rcRun(AsyncIoContext& async){
-	run(async);
+int GraphicsService::rcRun(AsyncIoContext& async, WaitScope& wait_scope){
+	run(async, wait_scope);
 	return return_code;
 }
 

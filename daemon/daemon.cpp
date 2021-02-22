@@ -6,6 +6,7 @@ int main(int argc, char** argv){
 	using namespace gin;
 
 	AsyncIoContext async = setupAsyncIo();
+	WaitScope wait_scope{async.event_loop};
 
 	GraphicsService service{Graphics{loadAllRenderPluginsIn("bin/plugins/")}};
 
@@ -14,5 +15,5 @@ int main(int argc, char** argv){
 		std::cout<<"Shutdown requested"<<std::endl;
 	}).detach([](const Error& error){return error;});
 
-	return service.rcRun(async);
+	return service.rcRun(async, wait_scope);
 }

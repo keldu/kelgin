@@ -5,28 +5,42 @@
 #include <kelgin/common.h>
 
 #include <map>
+#include <set>
 #include <string>
 
 namespace gin {
 class Glyph {
-
+private:
+public:
 };
 
 class Font {
+public:
+	class Page {
+	public:
+		struct Row {
+			size_t height;
+			size_t shift;
+			size_t width;
+		};
+		
+		class Info {
+		private:
+			std::vector<Row> rows;
+		};
+	private:
+		Image image;
+		Info info;
+	public:
+		Page(Image&& image, Info&& info);
+	};
 private:
-	struct Row {
-		size_t height;
-		size_t shift;
-		size_t width;
-	};
-
-	struct Page {
-		std::vector<Row> rows;
-	};
-
 	std::map<uint32_t, Page> pages;
+protected:
 public:
 	virtual ~Font() = default;
+
+	virtual Our<Page> generatePage(uint32_t size, const std::set<uint32_t>& code_points) = 0;
 };
 
 class FontFactory {

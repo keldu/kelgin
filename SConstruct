@@ -106,6 +106,9 @@ env.Alias('example_setup', env.example_setup_bin)
 # Tests
 # SConscript('test/SConscript')
 
+# Plugins
+env.Alias('plugins', env.plugins)
+
 # Clang format part
 env.Append(BUILDERS={'ClangFormat' : Builder(action = 'clang-format --style=file -i $SOURCE')})
 env.format_actions = []
@@ -119,7 +122,9 @@ env.Alias('format', env.format_actions)
 env.Alias('all', ['library','plugins','daemon','example_setup'])
 # env.Alias('test', env.test_program)
 env.Install('/usr/local/lib/', [env.library_shared, env.library_static])
+env.Install('/usr/local/lib/kelgin-graphics/', [env.plugins])
 env.Install('/usr/local/include/kelgin/graphics/', [env.headers])
 env.Install('/usr/local/include/kelgin/graphics/render/', [env.render_headers])
 env.Install('/usr/local/include/kelgin/graphics/common/', [env.common_headers])
+
 env.Alias('install', '/usr/local/')

@@ -27,6 +27,10 @@ using RenderViewportId = ResourceId;
 using Mesh3dId = ResourceId;
 using Program3dId = ResourceId;
 using RenderCamera3dId = ResourceId;
+using RenderStage3dId = ResourceId;
+using RenderProperty3dId = ResourceId;
+using RenderScene3dId = ResourceId;
+using RenderObject3dId = ResourceId;
 
 class MeshData {
 public:
@@ -37,9 +41,15 @@ public:
 
 class Mesh3dData {
 public:
-	std::vector<float> vertices;
-	std::vector<float> uvs;
-	std::vector<float> normals;
+	struct Vertex {
+		std::array<float, 3> position;
+		std::array<float, 3> normals;
+		std::array<float, 2> uvs;
+	};
+
+	static_assert(sizeof(Vertex) == sizeof(float)*8, "Mesh3dData::Vertex is not continuously set");
+
+	std::vector<Vertex> vertices;
 	std::vector<unsigned int> indices;
 };
 
@@ -141,27 +151,36 @@ public:
 	virtual void setObjectVisibility(const RenderSceneId&, const RenderObjectId&, bool) = 0;
 	virtual void destroyScene(const RenderSceneId&) = 0;
 
+	//
+	// 3D Interface
+	//
 	// Mesh3d Operations
 	virtual Mesh3dId createMesh3d(const Mesh3dData&) = 0;
 	virtual void destroyMesh3d(const Mesh3dId&) = 0;
 	
-	// Camera3d Operations
-	// virtual RenderCamera3dId createCamera3d() = 0;
-	// virtual void setCameraPosition(const RenderCamera3dId&, float, float, float) = 0;
-	// virtual void setCameraOrthographic(const RenderCamera3dId&, float, float, float, float, float, float) = 0;
-	// virtual void destroyCamera3d(const RenderCamera3dId&) = 0;
+	// Property3d Operations
+	virtual RenderProperty3dId createProperty3d(const Mesh3dId&, const TextureId&) = 0;
+	virtual void destroyRenderProperty(const RenderProperty3dId&) = 0;
 	
 	// Program3d Operations
-	//
-	//
+	virtual Program3dId createProgram3d() = 0;
+	virtual void destroyProgram3d(const Program3dId&) = 0;
 	
-	// Property3d Operations
-	//
-	//
+	// Camera3d Operations
+	virtual RenderCamera3dId createCamera3d() = 0;
+	virtual void setCamera3dPosition(const RenderCamera3dId&, float, float, float) = 0;
+	virtual void setCamera3dOrthographic(const RenderCamera3dId&, float, float, float, float, float, float) = 0;
+	virtual void destroyCamera3d(const RenderCamera3dId&) = 0;
 	
 	// Scene3d and Object3d Operations
+	virtual RenderScene3dId createScene3d() = 0;
+	virtual RenderObject3dId createObject3d(const RenderScene3dId&, const RenderProperty3dId&) = 0;
+	virtual void destroyObject3d(const RenderScene3dId&, const RenderObject3dId&) = 0;
+	virtual void destroyScene3d(const RenderScene3dId&) = 0;
 	//
-	//
+
+	virtual RenderStage3dId createStage3d(const RenderTargetId&, const RenderScene3dId&, const RenderCamera3dId&, const Program3dId&) = 0;
+	virtual void destroyStage3d(const RenderStage3dId&) = 0;
 
 	/// @todo change time_point to microseconds and independent to steady_clock type
 	virtual void step(const std::chrono::steady_clock::time_point&) = 0;

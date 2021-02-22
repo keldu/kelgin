@@ -63,20 +63,32 @@ size_t Ogl33Mesh::indexCount() const {
 
 
 Ogl33Mesh3d::Ogl33Mesh3d():
+	vao{0},
 	ids{0,0},
 	indices{0}
 {}
 
-Ogl33Mesh3d::Ogl33Mesh3d(std::array<GLuint,2>&& i, size_t ind):
+Ogl33Mesh3d::Ogl33Mesh3d(GLuint vao, std::array<GLuint,2>&& i, size_t ind):
+	vao{vao},
 	ids{std::move(i)},
 	indices{ind}
 {}
 
+
+Ogl33Mesh3d::~Ogl33Mesh3d(){
+	if(vao){
+		glDeleteVertexArrays(1,&vao);
+		glDeleteBuffers(2,&ids[0]);
+	}
+}
+
 Ogl33Mesh3d::Ogl33Mesh3d(Ogl33Mesh3d&& rhs):
+	vao{rhs.vao},
 	ids{std::move(rhs.ids)},
 	indices{rhs.indices}
 {
-	rhs.ids = {0,0};
+	rhs.vao = 0;
+	rhs.ids = {0,0,0,0};
 	rhs.indices = 0;
 }
 
@@ -86,6 +98,32 @@ void Ogl33Mesh3d::bindAttribute() const {
 
 void Ogl33Mesh3d::bindIndex() const {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ids[1]);
+}
+
+void Ogl33Mesh3d::setData(const Mesh3dData& data){
+	glBindVertexArray(vao);
+	bindAttribute();
+	glBufferData(GL_ARRAY_BUFFER, data.vertices.size() * sizeof(Vertex), data.vertices.data(), GL_DYNAMIC_DRAW);
+
+	bindIndex();
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, data.indices.size() * sizeof(unsigned int), data.indices.data(), GL_DYNAMIC_DRAW);
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribArray(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), nullptr);
+
+	glEnableVertexAttribArray(1);
+	glVertexAttribArray(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), offsetof(Vertex, normals));
+
+	glEnableVertexAttribArray(2);
+	glVertexAttribArray(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), offsetof(Vertex, uvs));
+
+	#ifndef NDEBUG
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+		glBindVertexArray(0);
+	#endif
+
+	indices = data.indices.size();
 }
 
 size_t Ogl33Mesh3d::indexCount() const {

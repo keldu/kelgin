@@ -79,17 +79,20 @@ public:
 
 class Ogl33Mesh3d {
 private:
+	GLuint vao;
 	std::array<GLuint, 2> ids;
 	size_t indices;
 
 public:
 	Ogl33Mesh3d();
-	Ogl33Mesh3d(std::array<GLuint, 2>&&, size_t);
+	Ogl33Mesh3d(GLuint, std::array<GLuint, 2>&&, size_t);
 	~Ogl33Mesh3d();
 	Ogl33Mesh3d(Ogl33Mesh3d&&);
 
 	void bindAttribute() const;
 	void bindIndex() const;
+
+	void setData(const Mesh3dData& data);
 
 	size_t indexCount() const;
 };
@@ -103,6 +106,7 @@ public:
 
 	void setOrtho(float left, float right, float top, float bottom, float near, float far);
 	void setViewPosition(float x, float y, float z);
+	void setViewRotation(float alpha, float beta, float gamma);
 
 	const Matrix<float, 4, 4>& projection() const;
 	const Matrix<float, 4, 4>& view() const;
@@ -248,6 +252,12 @@ public:
 	TextureId texture_id;
 };
 
+class Ogl33RenderProperty3d {
+public:
+	Mesh3dId mesh_id;
+	TextureId texture_id;
+};
+
 class Ogl33Scene {
 public:
 	struct RenderObject {
@@ -271,6 +281,42 @@ public:
 	void visit(const Ogl33Camera&, std::vector<RenderObject*>&);
 };
 
+class Ogl33Scene3d {
+public:
+	struct RenderObject {
+		RenderProperty3dId id = 0;
+		float x = 0.f;
+		float y = 0.f;
+		float z = 0.f;
+		float alpha = 0.f;
+		float beta = 0.f;
+		float gamma = 0.f;
+		bool visible = true;
+	};
+private:
+	std::unordered_map<RenderObject3dId, RenderObject> objects;
+public:
+
+	RenderObject3dId createObject(const RenderProperty3dId&);
+	void destroyObject(const RenderObject3dId&);
+
+	void setObjectPosition(const RenderObject3dId&, float, float, float);
+	void setObjectVisibility(const RenderObject3dId&, bool);
+};
+
+/// @todo implement stages
+class Ogl33RenderStage3d {
+private:
+	void renderOne();
+public:
+	RenderTargetId target_id;
+	RenderScene3dId scene_id;
+	RenderCamera3dId camera_id;
+	Program3dId program_id;
+
+	void render();
+};
+
 class Ogl33RenderStage {
 private:
 	void renderOne(Ogl33Program& program, Ogl33RenderProperty& property, Ogl33Scene::RenderObject& object, Ogl33Mesh& mesh, Ogl33Texture&, Matrix<float, 3, 3>& vp);
@@ -291,18 +337,27 @@ private:
 	bool loaded_glad = false;
 	GLuint vao = 0;
 
-	std::unordered_map<MeshId, Ogl33Mesh> meshes;
+	// General Resource Storage
 	std::unordered_map<TextureId, Ogl33Texture> textures;
+	std::unordered_map<RenderViewportId, Ogl33Viewport> viewports;
+
+	// 2D Resource Storage
+	std::unordered_map<MeshId, Ogl33Mesh> meshes;
 	std::unordered_map<ProgramId, Ogl33Program> programs;
 	std::unordered_map<RenderCameraId, Ogl33Camera> cameras;
-	std::unordered_map<RenderStageId, Ogl33RenderStage> render_stages;
-	std::unordered_map<RenderViewportId, Ogl33Viewport> viewports;
 	std::unordered_map<RenderPropertyId, Ogl33RenderProperty> render_properties;
 	std::unordered_map<RenderSceneId, Own<Ogl33Scene>> scenes;
+	std::unordered_map<RenderStageId, Ogl33RenderStage> render_stages;
 
-	// 3D Storage
+	// 3D Resource Storage
 	std::unordered_map<Mesh3dId, Ogl33Mesh3d> meshes_3d;
+	std::unordered_map<Program3dId, Ogl33Program3d> programs_3d;
+	std::unordered_map<RenderCamera3dId, Ogl33Camera3d> cameras_3d;
+	std::unordered_map<RenderProperty3dId, Ogl33RenderProperty3d> render_properties_3d;
+	std::unordered_map<RenderScene3dId, Ogl33Scene3d> scenes_3d;
+	std::unordered_map<RenderStage3dId, Ogl33RenderStage3d> render_stages_3d;
 
+	// Stages listening  to RenderTarget changes
 	std::unordered_multimap<RenderTargetId, RenderStageId> render_target_stages;
 
 	struct RenderTargetUpdate {
@@ -369,10 +424,28 @@ public:
 	void destroyScene(const RenderSceneId&) override;
 
 	// 3D
-
-
 	Mesh3dId createMesh3d(const Mesh3dData&) override;
 	void destroyMesh3d(const Mesh3dId&) override;
+
+	/// @todo layout api ideas
+	RenderProperty3dId createProperty3d(const Mesh3dId&, const TextureId&) override;
+	void destroyProperty3D(const RenderProperty3dId&) override;
+
+	Program3dId createProgram3d() override;
+	void destroyProgram3d(const Program3dId&) override;
+
+	RenderScene3dId createScene3d() override;
+	RenderObject3dId createObject3d(const RenderScene3dId&, const RenderProperty3dId&) override;
+	void destroyObject3d(const RenderScene3dId&, const RenderObject3dId&) override;
+	void destroyScene3d(const RenderScene3dId&) override;
+
+	RenderCamera3dId createCamera3d() override;
+	void setCamera3dPosition(const RenderCamera3dId&, float, float, float) override;
+	void setCamera3dOrthographic(const RenderCamera3dId&, float, float, float, float, float, float) override;
+	void destroyCamera3d(const RenderCamera3dId&) override;
+
+	RenderStage3dId createStage3d(const RenderTargetId&, const RenderScene3dId&, const RenderCamera3dId&, const Program3dId&) override;
+	void destroyStage3d(const RenderStage3dId&) override;
 
 	void step(const std::chrono::steady_clock::time_point&) override;
 	void flush() override;

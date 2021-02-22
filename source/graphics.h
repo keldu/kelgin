@@ -85,9 +85,9 @@ private:
 public:	
 	GraphicsService(Graphics&& gr);
 
-	int rcRun(AsyncIoContext& async);
+	int rcRun(AsyncIoContext& async, WaitScope& wait_scope);
 
-	void run(AsyncIoContext& async) override;
+	void run(AsyncIoContext& async, WaitScope& wait_scope) override;
 	void stop() override;
 };
 }

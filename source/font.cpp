@@ -45,6 +45,10 @@ public:
 			FT_Done_Face(face);
 		}
 	}
+
+	Our<Page> generatePage(uint32_t size, const std::set<uint32_t>& code_points) override {
+		return nullptr;
+	}
 };
 
 class FreeTypeFontFactory final : public FontFactory {
