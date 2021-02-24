@@ -160,7 +160,7 @@ public:
 	
 	// Property3d Operations
 	virtual RenderProperty3dId createProperty3d(const Mesh3dId&, const TextureId&) = 0;
-	virtual void destroyRenderProperty(const RenderProperty3dId&) = 0;
+	virtual void destroyProperty3d(const RenderProperty3dId&) = 0;
 	
 	// Program3d Operations
 	virtual Program3dId createProgram3d() = 0;

@@ -81,7 +81,7 @@ void Ogl33Camera3d::setViewPosition(float x, float y, float z){
 	view_matrix(2, 3) = -z;
 }
 
-void Ogl33Camera::setViewRotation(float alpha, float beta, float gamma){
+void Ogl33Camera3d::setViewRotation(float alpha, float beta, float gamma){
 	/// @todo set rotation matrix in [0-2]x[0-2]
 }
 
@@ -1057,20 +1057,29 @@ Mesh3dId Ogl33Render::createMesh3d(const Mesh3dData& data){
 	GLuint vao;
 
 	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
 
-	glGenBuffers(2, &ids[0]);
-
+	glGenBuffers(2,&ids[0]);
 	glBindBuffer(GL_ARRAY_BUFFER, ids[0]);
-	glBufferData(GL_ARRAY_BUFFER, data.vertices.size() * sizeof(Vertex), data.vertices.data(), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, data.vertices.size() * sizeof(Mesh3dData::Vertex), data.vertices.data(), GL_STATIC_DRAW);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ids[1]);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, data.indices.size() * sizeof(unsigned int), data.indices.data(), GL_STATIC_DRAW);
 
-// This is unnecessary in a correct renderer impl
-#ifndef NDEBUG
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-#endif
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Mesh3dData::Vertex), nullptr);
+
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Mesh3dData::Vertex), reinterpret_cast<void*>(offsetof(Mesh3dData::Vertex, normals)));
+
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Mesh3dData::Vertex), reinterpret_cast<void*>(offsetof(Mesh3dData::Vertex, uvs)));
+
+	#ifndef NDEBUG
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+		glBindVertexArray(0);
+	#endif
 
 	meshes_3d.insert(std::make_pair(id, Ogl33Mesh3d{vao, std::move(ids), data.indices.size()}));
 	return id;

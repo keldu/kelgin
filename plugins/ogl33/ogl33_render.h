@@ -429,7 +429,7 @@ public:
 
 	/// @todo layout api ideas
 	RenderProperty3dId createProperty3d(const Mesh3dId&, const TextureId&) override;
-	void destroyProperty3D(const RenderProperty3dId&) override;
+	void destroyProperty3d(const RenderProperty3dId&) override;
 
 	Program3dId createProgram3d() override;
 	void destroyProgram3d(const Program3dId&) override;
