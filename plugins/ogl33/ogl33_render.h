@@ -304,19 +304,6 @@ public:
 	void setObjectVisibility(const RenderObject3dId&, bool);
 };
 
-/// @todo implement stages
-class Ogl33RenderStage3d {
-private:
-	void renderOne();
-public:
-	RenderTargetId target_id;
-	RenderScene3dId scene_id;
-	RenderCamera3dId camera_id;
-	Program3dId program_id;
-
-	void render();
-};
-
 class Ogl33RenderStage {
 private:
 	void renderOne(Ogl33Program& program, Ogl33RenderProperty& property, Ogl33Scene::RenderObject& object, Ogl33Mesh& mesh, Ogl33Texture&, Matrix<float, 3, 3>& vp);
@@ -327,6 +314,18 @@ public:
 	ProgramId program_id;
 
 	void render(Ogl33Render& render);
+};
+
+class Ogl33RenderStage3d {
+private:
+	void renderOne();
+public:
+	RenderTargetId target_id;
+	RenderScene3dId scene_id;
+	RenderCamera3dId camera_id;
+	Program3dId program_id;
+
+	void render();
 };
 
 class Ogl33Render final : public LowLevelRender {
@@ -349,6 +348,9 @@ private:
 	std::unordered_map<RenderSceneId, Own<Ogl33Scene>> scenes;
 	std::unordered_map<RenderStageId, Ogl33RenderStage> render_stages;
 
+	// Stages listening  to RenderTarget changes
+	std::unordered_multimap<RenderTargetId, RenderStageId> render_target_stages;
+
 	// 3D Resource Storage
 	std::unordered_map<Mesh3dId, Ogl33Mesh3d> meshes_3d;
 	std::unordered_map<Program3dId, Ogl33Program3d> programs_3d;
@@ -358,7 +360,7 @@ private:
 	std::unordered_map<RenderStage3dId, Ogl33RenderStage3d> render_stages_3d;
 
 	// Stages listening  to RenderTarget changes
-	std::unordered_multimap<RenderTargetId, RenderStageId> render_target_stages;
+	std::unordered_multimap<RenderTargetId, RenderStage3dId> render_target_stages_3d;
 
 	struct RenderTargetUpdate {
 		std::chrono::steady_clock::duration seconds_per_frame;
@@ -373,83 +375,84 @@ public:
 	Ogl33Render(Own<GlContext>&&);
 	~Ogl33Render();
 
-	Ogl33Scene* getScene(const RenderSceneId&);
-	Ogl33Camera* getCamera(const RenderCameraId&);
-	Ogl33Program* getProgram(const ProgramId&);
-	Ogl33RenderProperty* getProperty(const RenderPropertyId&);
-	Ogl33Mesh* getMesh(const MeshId&);
-	Ogl33Texture* getTexture(const TextureId&);
+	Ogl33Scene* getScene(const RenderSceneId&) noexcept;
+	Ogl33Camera* getCamera(const RenderCameraId&) noexcept;
+	Ogl33Program* getProgram(const ProgramId&) noexcept;
+	Ogl33RenderProperty* getProperty(const RenderPropertyId&) noexcept;
+	Ogl33Mesh* getMesh(const MeshId&) noexcept;
+	Ogl33Texture* getTexture(const TextureId&) noexcept;
 
-	MeshId createMesh(const MeshData&) override;
-	void setMeshData(const MeshId&, const MeshData&) override;
-	void destroyMesh(const MeshId&) override;
+	ErrorOr<MeshId> createMesh(const MeshData&) noexcept override;
+	Error setMeshData(const MeshId&, const MeshData&) noexcept override;
+	Error destroyMesh(const MeshId&) noexcept override;
 
-	TextureId createTexture(const Image&) override;
-	void destroyTexture(const TextureId&) override;
+	ErrorOr<TextureId> createTexture(const Image&) noexcept override;
+	Error destroyTexture(const TextureId&) noexcept override;
 
-	RenderWindowId createWindow(const RenderVideoMode&, const std::string& title) override;
-	void setWindowDesiredFPS(const RenderWindowId&, float fps) override;
-	void setWindowVisibility(const RenderWindowId& id, bool show) override;
-	void destroyWindow(const RenderWindowId& id) override;
+	ErrorOr<RenderWindowId> createWindow(const RenderVideoMode&, const std::string& title) noexcept override;
+	Error setWindowDesiredFPS(const RenderWindowId&, float fps) noexcept override;
+	Error setWindowVisibility(const RenderWindowId& id, bool show) noexcept override;
+	Error destroyWindow(const RenderWindowId& id) noexcept override;
 
-	ProgramId createProgram(const std::string& vertex_src, const std::string& fragment_src) override;
-	ProgramId createProgram() override;
-	void destroyProgram(const ProgramId&) override;
+	ErrorOr<ProgramId> createProgram(const std::string& vertex_src, const std::string& fragment_src) noexcept override;
+	ErrorOr<ProgramId> createProgram() noexcept override;
+	Error destroyProgram(const ProgramId&) noexcept override;
 
-	RenderCameraId createCamera() override;
-	void setCameraPosition(const RenderCameraId&, float x, float y) override;
-	void setCameraRotation(const RenderCameraId&, float alpha) override;
-	void setCameraOrthographic(const RenderCameraId&, float, float, float, float) override;
-	Conveyor<RenderEvent::Events> listenToWindowEvents(const RenderWindowId&) override;
-	void destroyCamera(const RenderCameraId&) override;
+	ErrorOr<RenderCameraId> createCamera() noexcept override;
+	Error setCameraPosition(const RenderCameraId&, float x, float y) noexcept override;
+	Error setCameraRotation(const RenderCameraId&, float alpha) noexcept override;
+	Error setCameraOrthographic(const RenderCameraId&, float, float, float, float) noexcept override;
+	Conveyor<RenderEvent::Events> listenToWindowEvents(const RenderWindowId&) noexcept override;
+	Error destroyCamera(const RenderCameraId&) noexcept override;
 
-	RenderStageId createStage(const RenderTargetId& id, const RenderSceneId&, const RenderCameraId&, const ProgramId&) override;
-	void destroyStage(const RenderStageId&) override;
+	ErrorOr<RenderStageId> createStage(const RenderTargetId& id, const RenderSceneId&, const RenderCameraId&, const ProgramId&) noexcept override;
+	Error destroyStage(const RenderStageId&) noexcept override;
 
-	RenderViewportId createViewport() override;
-	void setViewportRect(const RenderViewportId&, float, float, float, float) override;
-	void destroyViewport(const RenderViewportId&) override;
+	ErrorOr<RenderViewportId> createViewport() noexcept override;
+	Error setViewportRect(const RenderViewportId&, float, float, float, float) noexcept override;
+	Error destroyViewport(const RenderViewportId&) noexcept override;
 
-	RenderPropertyId createProperty(const MeshId&, const TextureId&) override;
-	void setPropertyMesh(const RenderPropertyId&, const MeshId& id) override;
-	void setPropertyTexture(const RenderPropertyId&, const TextureId& id) override;
-	void destroyProperty(const RenderPropertyId&) override;
+	ErrorOr<RenderPropertyId> createProperty(const MeshId&, const TextureId&) noexcept override;
+	Error setPropertyMesh(const RenderPropertyId&, const MeshId& id) noexcept override;
+	Error setPropertyTexture(const RenderPropertyId&, const TextureId& id) noexcept override;
+	Error destroyProperty(const RenderPropertyId&) noexcept override;
 
-	RenderSceneId createScene() override;
-	RenderObjectId createObject(const RenderSceneId&, const RenderPropertyId&) override;
-	void destroyObject(const RenderSceneId&, const RenderObjectId&) override;
-	void setObjectPosition(const RenderSceneId&, const RenderObjectId&, float, float) override;
-	void setObjectRotation(const RenderSceneId&, const RenderObjectId&, float) override;
-	void setObjectVisibility(const RenderSceneId&, const RenderObjectId&, bool) override;
-	void destroyScene(const RenderSceneId&) override;
+	ErrorOr<RenderSceneId> createScene() noexcept override;
+	ErrorOr<RenderObjectId> createObject(const RenderSceneId&, const RenderPropertyId&) noexcept override;
+	Error destroyObject(const RenderSceneId&, const RenderObjectId&) noexcept override;
+	Error setObjectPosition(const RenderSceneId&, const RenderObjectId&, float, float) noexcept override;
+	Error setObjectRotation(const RenderSceneId&, const RenderObjectId&, float) noexcept override;
+	Error setObjectVisibility(const RenderSceneId&, const RenderObjectId&, bool) noexcept override;
+	Error destroyScene(const RenderSceneId&) noexcept override;
 
 	// 3D
-	Mesh3dId createMesh3d(const Mesh3dData&) override;
-	void destroyMesh3d(const Mesh3dId&) override;
+	ErrorOr<Mesh3dId> createMesh3d(const Mesh3dData&) noexcept override;
+	Error destroyMesh3d(const Mesh3dId&) noexcept override;
 
 	/// @todo layout api ideas
-	RenderProperty3dId createProperty3d(const Mesh3dId&, const TextureId&) override;
-	void destroyProperty3d(const RenderProperty3dId&) override;
+	ErrorOr<RenderProperty3dId> createProperty3d(const Mesh3dId&, const TextureId&) noexcept override;
+	Error destroyProperty3d(const RenderProperty3dId&) noexcept override;
 
-	Program3dId createProgram3d() override;
-	void destroyProgram3d(const Program3dId&) override;
+	ErrorOr<Program3dId> createProgram3d(const std::string& vertex_src, const std::string& fragment_src) noexcept override;
+	ErrorOr<Program3dId> createProgram3d() noexcept override;
+	Error destroyProgram3d(const Program3dId&) noexcept override;
 
-	RenderScene3dId createScene3d() override;
-	RenderObject3dId createObject3d(const RenderScene3dId&, const RenderProperty3dId&) override;
-	void destroyObject3d(const RenderScene3dId&, const RenderObject3dId&) override;
-	void destroyScene3d(const RenderScene3dId&) override;
+	ErrorOr<RenderScene3dId> createScene3d() noexcept override;
+	ErrorOr<RenderObject3dId> createObject3d(const RenderScene3dId&, const RenderProperty3dId&) noexcept override;
+	Error destroyObject3d(const RenderScene3dId&, const RenderObject3dId&) noexcept override;
+	Error destroyScene3d(const RenderScene3dId&) noexcept override;
 
-	RenderCamera3dId createCamera3d() override;
-	void setCamera3dPosition(const RenderCamera3dId&, float, float, float) override;
-	void setCamera3dOrthographic(const RenderCamera3dId&, float, float, float, float, float, float) override;
-	void destroyCamera3d(const RenderCamera3dId&) override;
+	ErrorOr<RenderCamera3dId> createCamera3d() noexcept override;
+	Error setCamera3dPosition(const RenderCamera3dId&, float, float, float) noexcept override;
+	Error setCamera3dOrthographic(const RenderCamera3dId&, float, float, float, float, float, float) noexcept override;
+	Error destroyCamera3d(const RenderCamera3dId&) noexcept override;
 
-	RenderStage3dId createStage3d(const RenderTargetId&, const RenderScene3dId&, const RenderCamera3dId&, const Program3dId&) override;
-	void destroyStage3d(const RenderStage3dId&) override;
+	ErrorOr<RenderStage3dId> createStage3d(const RenderTargetId&, const RenderScene3dId&, const RenderCamera3dId&, const Program3dId&) noexcept override;
+	Error destroyStage3d(const RenderStage3dId&) noexcept override;
 
-	void step(const std::chrono::steady_clock::time_point&) override;
-	void flush() override;
+	void step(const std::chrono::steady_clock::time_point&) noexcept override;
+	void flush() noexcept override;
 
-	virtual void updateTime(const std::chrono::steady_clock::time_point& ) override;
+	void updateTime(const std::chrono::steady_clock::time_point& ) noexcept override;
 };
 }

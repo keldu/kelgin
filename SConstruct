@@ -56,9 +56,11 @@ env.daemon_sources = []
 env.daemon_headers = []
 env.daemon_objects = []
 
-env.example_sources = []
+env.example_event_sources = []
+env.example_event_objects = []
+env.example_teapot_sources = []
+env.example_teapot_objects = []
 env.example_headers = []
-env.example_objects = []
 
 Export('env')
 SConscript('source/SConscript')
@@ -98,10 +100,13 @@ env.Alias('daemon', env.daemon_bin)
 # Examples
 example_env = env.Clone()
 example_env.Append(LIBS=['pthread'])
-example_env.add_source_files(env.example_objects, env.example_sources)
-env.example_setup_bin = example_env.Program('#bin/example_setup', [env.example_objects, env.library_shared]);
+example_env.add_source_files(env.example_event_objects, env.example_event_sources)
+env.example_event_bin = example_env.Program('#bin/example_event', [env.example_event_objects, env.library_shared]);
 
-env.Alias('example_setup', env.example_setup_bin)
+example_env.add_source_files(env.example_teapot_objects, env.example_teapot_sources)
+env.example_teapot_bin = example_env.Program('#bin/example_teapot', [env.example_teapot_objects, env.library_shared]);
+
+env.Alias('examples', [env.example_event_bin, env.example_teapot_bin])
 
 # Tests
 # SConscript('test/SConscript')
@@ -117,9 +122,9 @@ def format_iter(env,files):
         env.format_actions.append(env.AlwaysBuild(env.ClangFormat(target=f+"-clang-format",source=f)))
     pass
 
-format_iter(env,env.sources + env.headers + env.daemon_sources + env.daemon_headers + env.example_sources + env.example_headers)
+format_iter(env,env.sources + env.headers + env.daemon_sources + env.daemon_headers + env.example_event_sources + env.example_teapot_sources + env.example_headers)
 env.Alias('format', env.format_actions)
-env.Alias('all', ['library','plugins','daemon','example_setup'])
+env.Alias('all', ['library','plugins','daemon','examples'])
 # env.Alias('test', env.test_program)
 env.Install('/usr/local/lib/', [env.library_shared, env.library_static])
 env.Install('/usr/local/lib/kelgin-graphics/', [env.plugins])

@@ -17,7 +17,16 @@ namespace gin {
 * Service since it is the core class running the main
 * aspects
 */
-class RenderPlugins {
+
+class RenderProvider {
+public:
+	virtual ~RenderProvider() = default;
+
+	/// @todo build interface, because plugins aren't always available
+	// virtual LowLevelRender* getRenderer(const std::string& name) = 0;
+};
+
+class RenderPlugins : public RenderProvider{
 public:
 	struct Plugin {
 	public:
@@ -41,6 +50,8 @@ public:
 	RenderPlugins() = default;
 	RenderPlugins(std::filesystem::path&&,std::map<std::string, RenderPlugins::Plugin>&&);
 
+	~RenderPlugins() = default;
+
 	RenderPlugins(RenderPlugins&&) = default;
 	RenderPlugins& operator=(RenderPlugins&&) = default;
 	/**
@@ -53,7 +64,7 @@ public:
 	Plugin* getHandle(const std::string& name);
 };
 
-RenderPlugins loadAllRenderPluginsIn(const std::filesystem::path& dir);
+Own<RenderProvider> loadAllRenderPluginsIn(const std::filesystem::path& dir);
 
 class Graphics {
 private:

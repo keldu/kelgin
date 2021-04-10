@@ -602,7 +602,7 @@ Ogl33Texture* Ogl33Render::getTexture(const TextureId& id){
 	return nullptr;
 }
 
-MeshId Ogl33Render::createMesh(const MeshData& data){
+ErrorOr<MeshId> Ogl33Render::createMesh(const MeshData& data){
 	std::array<GLuint,3> ids;
 
 	/// @todo ensure that the current render context is bound
@@ -626,21 +626,30 @@ MeshId Ogl33Render::createMesh(const MeshData& data){
 
 	MeshId m_id = searchForFreeId(meshes);
 
-	meshes.insert(std::make_pair(m_id,Ogl33Mesh{std::move(ids), data.indices.size()}));
+	try{
+		meshes.insert(std::make_pair(m_id,Ogl33Mesh{std::move(ids), data.indices.size()}));
+	}catch(std::bad_alloc&&){
+		return criticalError("Out of memory");
+	}
 	return m_id;
 }
 
-void Ogl33Render::setMeshData(const MeshId& id, const MeshData& data){
+Error Ogl33Render::setMeshData(const MeshId& id, const MeshData& data){
 	auto find = meshes.find(id);
 	if(find == meshes.end()){
-		return;
+		return recoverableError("Couldn't find mesh");
 	}
 
 	find->second.setData(data);
+	return noError();
 }
 
-void Ogl33Render::destroyMesh(const MeshId& id){
+/// @todo check if an error might be necessary
+Error Ogl33Render::destroyMesh(const MeshId& id){
+
 	meshes.erase(id);
+
+	return noError();
 }
 
 namespace {
@@ -654,7 +663,7 @@ GLint translateImageChannel(uint8_t channels){
 }
 }
 
-TextureId Ogl33Render::createTexture(const Image& image){
+ErrorOr<TextureId> Ogl33Render::createTexture(const Image& image){
 	GLuint texture_id;
 	glGenTextures(1, &texture_id);
 	glBindTexture(GL_TEXTURE_2D, texture_id);
@@ -670,18 +679,25 @@ TextureId Ogl33Render::createTexture(const Image& image){
 	
 	TextureId t_id = searchForFreeId(textures);
 
-	textures.insert(std::make_pair(t_id, Ogl33Texture{texture_id}));
+	try{
+		textures.insert(std::make_pair(t_id, Ogl33Texture{texture_id}));
+	}catch(std::bad_alloc&&){
+		return criticalError("Out of memory");
+	}
 	return t_id;
 }
 
-void Ogl33Render::destroyTexture(const TextureId& id){
+/// @todo check if an error might be necessary
+Error Ogl33Render::destroyTexture(const TextureId& id){
 	textures.erase(id);
+
+	return noError();
 }
 
-RenderWindowId Ogl33Render::createWindow(const RenderVideoMode& mode, const std::string& title) {
+ErrorOr<RenderWindowId> Ogl33Render::createWindow(const RenderVideoMode& mode, const std::string& title) {
 	auto gl_win = context->createWindow(VideoMode{mode.width,mode.height}, title);
 	if(!gl_win){
-		return 0;
+		return criticalError("Couldn't create window");
 	}
 
 	gl_win->bind();
@@ -695,7 +711,12 @@ RenderWindowId Ogl33Render::createWindow(const RenderVideoMode& mode, const std:
 		loaded_glad = true;
 	}
 
-	return render_targets.insert(Ogl33Window{std::move(gl_win)});
+	try{
+		auto id = render_targets.insert(Ogl33Window{std::move(gl_win)});
+		return id;
+	}catch(std::bad_alloc&&){
+		return criticalError("Out of memory");
+	} 
 }
 
 void Ogl33Render::setWindowDesiredFPS(const RenderWindowId& id, float fps){
@@ -768,10 +789,8 @@ GLuint createShader(const std::string &source, GLenum type) {
 
 	return id;
 }
-}
 
-ProgramId Ogl33Render::createProgram(const std::string& vertex_src, const std::string& fragment_src){
-	// context->bind();
+GLuint createOgl33Program(const std::string& vertex_src, const std::string& fragment_src){
 
 	GLuint vertex_shader_id =
 		createShader(vertex_src, GL_VERTEX_SHADER);
@@ -820,6 +839,13 @@ ProgramId Ogl33Render::createProgram(const std::string& vertex_src, const std::s
 	glDetachShader(p_id, fragment_shader_id);
 	glDeleteShader(vertex_shader_id);
 	glDeleteShader(fragment_shader_id);
+
+	return p_id;
+}
+}
+
+ProgramId Ogl33Render::createProgram(const std::string& vertex_src, const std::string& fragment_src){
+	GLuint p_id = createOgl33Program(vertex_src, fragment_src);
 
 	GLuint mvp_id = glGetUniformLocation(p_id, "mvp");
 	GLuint texture_sampler_id = glGetUniformLocation(p_id, "texture_sampler");
@@ -936,10 +962,10 @@ void Ogl33Render::destroyCamera(const RenderCameraId& id){
 }
 
 RenderStageId Ogl33Render::createStage(const RenderTargetId& target_id, const RenderSceneId& scene, const RenderCameraId& cam, const ProgramId& program_id){
-	
+
 	RenderStageId id = searchForFreeId(render_stages);
 	render_stages.insert(std::make_pair(id, Ogl33RenderStage{target_id, scene, cam, program_id}));
-	
+
 	render_target_stages.insert(std::make_pair(target_id, id));
 	return id;
 }
@@ -1090,15 +1116,97 @@ void Ogl33Render::destroyMesh3d(const Mesh3dId& id){
 }
 
 RenderProperty3dId Ogl33Render::createProperty3d(const Mesh3dId& mesh, const TextureId& texture){
-	/// @todo
-	return 0;
+	RenderProperty3dId id = searchForFreeId(render_properties_3d);
+	render_properties_3d.insert(std::make_pair(id, Ogl33RenderProperty3d{mesh, texture}));
+	return id;
 }
 
 void Ogl33Render::destroyProperty3d(const RenderProperty3dId& id){
-	/// @todo
+	render_properties_3d.erase(id);
 }
 
+Program3dId Ogl33Render::createProgram3d(const std::string& vertex_src, const std::string& fragment_src){
+	GLuint p_id = createOgl33Program(vertex_src, fragment_src);
 
+	GLuint mvp_id = glGetUniformLocation(p_id, "mvp");
+	GLuint texture_sampler_id = glGetUniformLocation(p_id, "texture_sampler");
+
+	Program3dId id = searchForFreeId(programs_3d);
+	programs_3d.insert(std::make_pair(id, Ogl33Program3d{p_id, texture_sampler_id, mvp_id}));
+	return id;
+}
+
+Program3dId Ogl33Render::createProgram3d(){
+	return createProgram3d(default_vertex_shader_program_3d, default_fragment_shader_program_3d);
+}
+
+void Ogl33Render::destroyProgram3d(const Program3dId& id){
+	programs_3d.erase(id);
+}
+
+RenderScene3dId Ogl33Render::createScene3d(){
+	RenderScene3dId id = searchForFreeId(scenes_3d);
+
+	scenes_3d.insert(std::make_pair(id, Ogl33Scene3d{}));
+
+	return id;
+}
+
+RenderObject3dId Ogl33Render::createObject3d(const RenderScene3dId& scene_id, const RenderProperty3dId& prop){
+	auto scene = scenes_3d.find(scene_id);
+	if(scene == scenes_3d.end()){
+		return 0;
+	}
+
+	return scene->second.createObject(prop);
+}
+
+void Ogl33Render::destroyObject3d(const RenderScene3dId& scene_id, const RenderObject3dId& obj){
+	auto scene = scenes_3d.find(scene_id);
+	if(scene == scenes_3d.end()){
+		return;
+	}
+
+	scene->second.destroyObject(obj);	
+}
+
+RenderCamera3dId Ogl33Render::createCamera3d(){
+	RenderScene3dId id = searchForFreeId(cameras_3d);
+	cameras_3d.insert(std::make_pair(id, Ogl33Camera3d{}));
+	return id;
+}
+void Ogl33Render::setCamera3dPosition(const RenderCamera3dId& id, float x, float y, float z){
+	auto find = cameras_3d.find(id);
+	if(find != cameras_3d.end()){
+		find->second.setViewPosition(x,y,z);
+	}
+}
+
+void Ogl33Render::setCamera3dOrthographic(const RenderCamera3dId& id, float, float, float, float, float, float){
+
+}
+
+void Ogl33Render::destroyCamera3d(const RenderCamera3dId& id){
+	cameras_3d.erase(id);
+}
+
+RenderStage3dId Ogl33Render::createStage3d(const RenderTargetId& target, const RenderScene3dId& scene, const RenderCamera3dId& camera, const Program3dId& program){
+	RenderStage3dId id = searchForFreeId(render_stages_3d);
+
+	render_stages_3d.insert(std::make_pair(id, Ogl33RenderStage3d{target, scene, camera, program}));
+
+	render_target_stages_3d.insert(std::make_pair(target, id));
+
+	return id;
+}
+
+void Ogl33Render::destroyStage3d(const RenderStage3dId& id){
+	render_stages_3d.erase(id);
+}
+
+void Ogl33Render::destroyScene3d(const RenderScene3dId& scene){
+	scenes_3d.erase(scene);
+}
 
 void Ogl33Render::stepRenderTargetTimes(const std::chrono::steady_clock::time_point& tp){
 	for(auto& iter : render_target_times){

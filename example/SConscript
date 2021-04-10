@@ -9,5 +9,7 @@ Import('env')
 
 dir_path = Dir('.').abspath
 
-env.example_sources = sorted(glob.glob(dir_path + "/*.cpp"))
+env.example_event_sources = sorted([dir_path + "/setup.cpp", dir_path + "/stb_impl.cpp"])
+env.example_teapot_sources = sorted([dir_path + "/teapot.cpp", dir_path + "/stb_impl.cpp"])
 env.example_headers = sorted(glob.glob(dir_path + "/*.h"))
+
