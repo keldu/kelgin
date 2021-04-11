@@ -26,7 +26,7 @@ public:
 	// virtual LowLevelRender* getRenderer(const std::string& name) = 0;
 };
 
-class RenderPlugins : public RenderProvider{
+class RenderPlugins : public RenderProvider {
 public:
 	struct Plugin {
 	public:

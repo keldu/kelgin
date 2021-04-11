@@ -28,9 +28,9 @@ RenderPlugins::Plugin* RenderPlugins::getHandle(const std::string& name){
 	return nullptr;
 }
 
-RenderPlugins loadAllRenderPluginsIn(const std::filesystem::path& dir){
+Own<RenderProvider> loadAllRenderPluginsIn(const std::filesystem::path& dir){
 	if(!std::filesystem::is_directory(dir)){
-		return RenderPlugins{};
+		return heap<RenderPlugins>();
 	}
 
 	std::map<std::string, RenderPlugins::Plugin> plugins;
