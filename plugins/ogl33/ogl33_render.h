@@ -394,6 +394,8 @@ public:
 	Error setWindowVisibility(const RenderWindowId& id, bool show) noexcept override;
 	Error destroyWindow(const RenderWindowId& id) noexcept override;
 
+	Conveyor<RenderEvent::Events> listenToWindowEvents(const RenderWindowId&) noexcept override;
+
 	ErrorOr<ProgramId> createProgram(const std::string& vertex_src, const std::string& fragment_src) noexcept override;
 	ErrorOr<ProgramId> createProgram() noexcept override;
 	Error destroyProgram(const ProgramId&) noexcept override;
@@ -402,9 +404,8 @@ public:
 	Error setCameraPosition(const RenderCameraId&, float x, float y) noexcept override;
 	Error setCameraRotation(const RenderCameraId&, float alpha) noexcept override;
 	Error setCameraOrthographic(const RenderCameraId&, float, float, float, float) noexcept override;
-	Conveyor<RenderEvent::Events> listenToWindowEvents(const RenderWindowId&) noexcept override;
 	Error destroyCamera(const RenderCameraId&) noexcept override;
-
+	
 	ErrorOr<RenderStageId> createStage(const RenderTargetId& id, const RenderSceneId&, const RenderCameraId&, const ProgramId&) noexcept override;
 	Error destroyStage(const RenderStageId&) noexcept override;
 
@@ -419,10 +420,10 @@ public:
 
 	ErrorOr<RenderSceneId> createScene() noexcept override;
 	ErrorOr<RenderObjectId> createObject(const RenderSceneId&, const RenderPropertyId&) noexcept override;
-	Error destroyObject(const RenderSceneId&, const RenderObjectId&) noexcept override;
 	Error setObjectPosition(const RenderSceneId&, const RenderObjectId&, float, float) noexcept override;
 	Error setObjectRotation(const RenderSceneId&, const RenderObjectId&, float) noexcept override;
 	Error setObjectVisibility(const RenderSceneId&, const RenderObjectId&, bool) noexcept override;
+	Error destroyObject(const RenderSceneId&, const RenderObjectId&) noexcept override;
 	Error destroyScene(const RenderSceneId&) noexcept override;
 
 	// 3D

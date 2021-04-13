@@ -42,13 +42,18 @@ gin::Image loadFromFile(const std::string &path) {
 int main() {
 	using namespace gin;
 
-	AsyncIoContext async = setupAsyncIo();
+	ErrorOr<AsyncIoContext> err_async = setupAsyncIo();
+	if(err_async.isError()){
+		std::cerr << "Couldn't load AsyncIoContext" << std::endl;
+		return -1;
+	}
+	AsyncIoContext& async = err_async.value();
 	WaitScope wait_scope{async.event_loop};
 
 	bool running = true;
 	async.event_port.onSignal(Signal::Terminate)
 		.then([&running]() { running = false; })
-		.detach([](const Error &error) { return error; });
+		.detach();
 
 	Graphics graphics{loadAllRenderPluginsIn("./bin/plugins/")};
 	LowLevelRender *render = graphics.getRenderer(*async.io, "ogl33");
@@ -59,43 +64,43 @@ int main() {
 
 	//	========================= Render Windows =============================
 	RenderWindowId win_id =
-		render->createWindow({600, 400}, "Kelgin Setup Example");
+		render->createWindow({600, 400}, "Kelgin Setup Example").value();
 	render->flush();
 
 	//	=========================== Programs =================================
 	ProgramId program_id =
-		render->createProgram(default_vertex_shader, default_fragment_shader);
+		render->createProgram(default_vertex_shader, default_fragment_shader).value();
 
 	//	============================ Meshes ==================================
-	MeshId mesh_id = render->createMesh(default_mesh);
-	MeshId bg_mesh_id = render->createMesh(bg_mesh);
+	MeshId mesh_id = render->createMesh(default_mesh).value();
+	MeshId bg_mesh_id = render->createMesh(bg_mesh).value();
 
 	//  =========================== Textures =================================
-	TextureId texture_id = render->createTexture(loadFromFile("test.png"));
-	TextureId green_square_tex_id = render->createTexture(default_image);
-	TextureId bg_tex_id = render->createTexture(loadFromFile("bg.png"));
+	TextureId texture_id = render->createTexture(loadFromFile("test.png")).value();
+	TextureId green_square_tex_id = render->createTexture(default_image).value();
+	TextureId bg_tex_id = render->createTexture(loadFromFile("bg.png")).value();
 
 	//	============================ Scenes ==================================
-	RenderSceneId scene_id = render->createScene();
+	RenderSceneId scene_id = render->createScene().value();
 
 	//	===================== Render Properties ==============================
-	RenderPropertyId rp_id = render->createProperty(mesh_id, texture_id);
+	RenderPropertyId rp_id = render->createProperty(mesh_id, texture_id).value();
 	RenderPropertyId gsq_rp_id =
-		render->createProperty(mesh_id, green_square_tex_id);
-	RenderPropertyId bg_rp_id = render->createProperty(bg_mesh_id, bg_tex_id);
+		render->createProperty(mesh_id, green_square_tex_id).value();
+	RenderPropertyId bg_rp_id = render->createProperty(bg_mesh_id, bg_tex_id).value();
 
 	//	======================= Render Objects ===============================
-	RenderObjectId ro_id = render->createObject(scene_id, gsq_rp_id);
+	RenderObjectId ro_id = render->createObject(scene_id, gsq_rp_id).value();
 	std::array<std::array<RenderObjectId, 3>, 3> bg_ro_ids = {
-		render->createObject(scene_id, bg_rp_id),
-		render->createObject(scene_id, bg_rp_id),
-		render->createObject(scene_id, bg_rp_id),
-		render->createObject(scene_id, bg_rp_id),
-		render->createObject(scene_id, bg_rp_id),
-		render->createObject(scene_id, bg_rp_id),
-		render->createObject(scene_id, bg_rp_id),
-		render->createObject(scene_id, bg_rp_id),
-		render->createObject(scene_id, bg_rp_id)};
+		render->createObject(scene_id, bg_rp_id).value(),
+		render->createObject(scene_id, bg_rp_id).value(),
+		render->createObject(scene_id, bg_rp_id).value(),
+		render->createObject(scene_id, bg_rp_id).value(),
+		render->createObject(scene_id, bg_rp_id).value(),
+		render->createObject(scene_id, bg_rp_id).value(),
+		render->createObject(scene_id, bg_rp_id).value(),
+		render->createObject(scene_id, bg_rp_id).value(),
+		render->createObject(scene_id, bg_rp_id).value()};
 
 	for (size_t i = 0; i < 3; ++i) {
 		for (size_t j = 0; j < 3; ++j) {
@@ -104,7 +109,7 @@ int main() {
 		}
 	}
 
-	RenderCameraId camera_id = render->createCamera();
+	RenderCameraId camera_id = render->createCamera().value();
 	float aspect = 600.f / 400.f;
 	float zoom = 10.f;
 	render->setCameraOrthographic(camera_id, -2.0f * aspect * zoom,
@@ -112,7 +117,7 @@ int main() {
 								  2.0f * zoom);
 
 	RenderStageId stage_id =
-		render->createStage(program_id, win_id, scene_id, camera_id);
+		render->createStage(program_id, win_id, scene_id, camera_id).value();
 
 	int dx = 0;
 	int dy = 0;
@@ -186,7 +191,7 @@ int main() {
 					},
 					event);
 			})
-			.sink([](const Error &error) { return error; });
+			.sink();
 
 	render->setWindowVisibility(win_id, true);
 	render->setWindowDesiredFPS(win_id, 60.0f);

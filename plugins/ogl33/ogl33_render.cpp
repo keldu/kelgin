@@ -554,7 +554,7 @@ Ogl33Render::~Ogl33Render(){
 	}
 }
 
-Ogl33Scene* Ogl33Render::getScene(const RenderSceneId& id){
+Ogl33Scene* Ogl33Render::getScene(const RenderSceneId& id) noexcept {
 	auto iter = scenes.find(id);
 	if(iter != scenes.end()){
 		return iter->second.get();
@@ -562,7 +562,7 @@ Ogl33Scene* Ogl33Render::getScene(const RenderSceneId& id){
 	return nullptr;
 }
 
-Ogl33Camera* Ogl33Render::getCamera(const RenderCameraId& id){
+Ogl33Camera* Ogl33Render::getCamera(const RenderCameraId& id) noexcept {
 	auto iter = cameras.find(id);
 	if(iter != cameras.end()){
 		return &iter->second;
@@ -570,7 +570,7 @@ Ogl33Camera* Ogl33Render::getCamera(const RenderCameraId& id){
 	return nullptr;
 }
 
-Ogl33Program* Ogl33Render::getProgram(const ProgramId& id){
+Ogl33Program* Ogl33Render::getProgram(const ProgramId& id) noexcept {
 	auto iter = programs.find(id);
 	if(iter != programs.end()){
 		return &iter->second;
@@ -578,7 +578,7 @@ Ogl33Program* Ogl33Render::getProgram(const ProgramId& id){
 	return nullptr;
 }
 
-Ogl33RenderProperty* Ogl33Render::getProperty(const RenderPropertyId& id){
+Ogl33RenderProperty* Ogl33Render::getProperty(const RenderPropertyId& id) noexcept {
 	auto iter = render_properties.find(id);
 	if(iter != render_properties.end()){
 		return &iter->second;
@@ -586,7 +586,7 @@ Ogl33RenderProperty* Ogl33Render::getProperty(const RenderPropertyId& id){
 	return nullptr;
 }
 
-Ogl33Mesh* Ogl33Render::getMesh(const MeshId& id){
+Ogl33Mesh* Ogl33Render::getMesh(const MeshId& id) noexcept {
 	auto iter = meshes.find(id);
 	if(iter != meshes.end()){
 		return &iter->second;
@@ -594,7 +594,7 @@ Ogl33Mesh* Ogl33Render::getMesh(const MeshId& id){
 	return nullptr;
 }
 
-Ogl33Texture* Ogl33Render::getTexture(const TextureId& id){
+Ogl33Texture* Ogl33Render::getTexture(const TextureId& id) noexcept {
 	auto iter = textures.find(id);
 	if(iter != textures.end()){
 		return &iter->second;
@@ -602,7 +602,7 @@ Ogl33Texture* Ogl33Render::getTexture(const TextureId& id){
 	return nullptr;
 }
 
-ErrorOr<MeshId> Ogl33Render::createMesh(const MeshData& data){
+ErrorOr<MeshId> Ogl33Render::createMesh(const MeshData& data) noexcept {
 	std::array<GLuint,3> ids;
 
 	/// @todo ensure that the current render context is bound
@@ -628,13 +628,13 @@ ErrorOr<MeshId> Ogl33Render::createMesh(const MeshData& data){
 
 	try{
 		meshes.insert(std::make_pair(m_id,Ogl33Mesh{std::move(ids), data.indices.size()}));
-	}catch(std::bad_alloc&&){
+	}catch(const std::bad_alloc&){
 		return criticalError("Out of memory");
 	}
 	return m_id;
 }
 
-Error Ogl33Render::setMeshData(const MeshId& id, const MeshData& data){
+Error Ogl33Render::setMeshData(const MeshId& id, const MeshData& data) noexcept {
 	auto find = meshes.find(id);
 	if(find == meshes.end()){
 		return recoverableError("Couldn't find mesh");
@@ -645,7 +645,7 @@ Error Ogl33Render::setMeshData(const MeshId& id, const MeshData& data){
 }
 
 /// @todo check if an error might be necessary
-Error Ogl33Render::destroyMesh(const MeshId& id){
+Error Ogl33Render::destroyMesh(const MeshId& id) noexcept {
 
 	meshes.erase(id);
 
@@ -663,7 +663,7 @@ GLint translateImageChannel(uint8_t channels){
 }
 }
 
-ErrorOr<TextureId> Ogl33Render::createTexture(const Image& image){
+ErrorOr<TextureId> Ogl33Render::createTexture(const Image& image) noexcept {
 	GLuint texture_id;
 	glGenTextures(1, &texture_id);
 	glBindTexture(GL_TEXTURE_2D, texture_id);
@@ -681,20 +681,20 @@ ErrorOr<TextureId> Ogl33Render::createTexture(const Image& image){
 
 	try{
 		textures.insert(std::make_pair(t_id, Ogl33Texture{texture_id}));
-	}catch(std::bad_alloc&&){
+	}catch(const std::bad_alloc&){
 		return criticalError("Out of memory");
 	}
 	return t_id;
 }
 
 /// @todo check if an error might be necessary
-Error Ogl33Render::destroyTexture(const TextureId& id){
+Error Ogl33Render::destroyTexture(const TextureId& id) noexcept {
 	textures.erase(id);
 
 	return noError();
 }
 
-ErrorOr<RenderWindowId> Ogl33Render::createWindow(const RenderVideoMode& mode, const std::string& title) {
+ErrorOr<RenderWindowId> Ogl33Render::createWindow(const RenderVideoMode& mode, const std::string& title) noexcept {
 	auto gl_win = context->createWindow(VideoMode{mode.width,mode.height}, title);
 	if(!gl_win){
 		return criticalError("Couldn't create window");
@@ -714,15 +714,15 @@ ErrorOr<RenderWindowId> Ogl33Render::createWindow(const RenderVideoMode& mode, c
 	try{
 		auto id = render_targets.insert(Ogl33Window{std::move(gl_win)});
 		return id;
-	}catch(std::bad_alloc&&){
+	}catch(const std::bad_alloc&){
 		return criticalError("Out of memory");
 	} 
 }
 
-void Ogl33Render::setWindowDesiredFPS(const RenderWindowId& id, float fps){
+Error Ogl33Render::setWindowDesiredFPS(const RenderWindowId& id, float fps) noexcept {
 	Ogl33Window* window = render_targets.getWindow(id);
 	if(!window){
-		return;
+		return criticalError("Couldn't create Window");
 	}
 
 	auto& update = render_target_times[static_cast<RenderTargetId>(id)];
@@ -730,15 +730,19 @@ void Ogl33Render::setWindowDesiredFPS(const RenderWindowId& id, float fps){
 	std::chrono::duration<float, std::ratio<1,1>> fps_chrono{1.0f / fps};
 	update.next_update = std::chrono::steady_clock::now();
 	update.seconds_per_frame = std::chrono::duration_cast<std::chrono::steady_clock::duration>(fps_chrono);
+
+	return noError();
 }
 
-void Ogl33Render::destroyWindow(const RenderWindowId& id){
+Error Ogl33Render::destroyWindow(const RenderWindowId& id) noexcept {
 	render_targets.erase(static_cast<RenderTargetId>(id));
 	render_target_stages.erase(static_cast<RenderTargetId>(id));
 	render_target_times.erase(static_cast<RenderTargetId>(id));
+
+	return noError();
 }
 
-Conveyor<RenderEvent::Events> Ogl33Render::listenToWindowEvents(const RenderWindowId& id) {
+Conveyor<RenderEvent::Events> Ogl33Render::listenToWindowEvents(const RenderWindowId& id) noexcept {
 	Ogl33Window* window = render_targets.getWindow(id);
 	if(!window){
 		return Conveyor<RenderEvent::Events>{nullptr, nullptr};
@@ -747,10 +751,10 @@ Conveyor<RenderEvent::Events> Ogl33Render::listenToWindowEvents(const RenderWind
 	return window->listenToWindowEvents();
 }
 
-void Ogl33Render::setWindowVisibility(const RenderWindowId& id, bool show){
+Error Ogl33Render::setWindowVisibility(const RenderWindowId& id, bool show) noexcept {
 	Ogl33Window* window = render_targets.getWindow(id);
 	if(!window){
-		return;
+		return criticalError("No window found");
 	}
 
 	if(show){
@@ -758,10 +762,12 @@ void Ogl33Render::setWindowVisibility(const RenderWindowId& id, bool show){
 	}else{
 		window->hide();
 	}
+
+	return noError();
 }
 
 namespace {
-GLuint createShader(const std::string &source, GLenum type) {
+GLuint createShader(const std::string &source, GLenum type) noexcept {
 	GLuint id = glCreateShader(type);
 	if (id == 0) {
 		std::cerr<<"Failed to create shader"<<std::endl;
@@ -790,7 +796,7 @@ GLuint createShader(const std::string &source, GLenum type) {
 	return id;
 }
 
-GLuint createOgl33Program(const std::string& vertex_src, const std::string& fragment_src){
+ErrorOr<GLuint> createOgl33Program(const std::string& vertex_src, const std::string& fragment_src) noexcept {
 
 	GLuint vertex_shader_id =
 		createShader(vertex_src, GL_VERTEX_SHADER);
@@ -804,7 +810,7 @@ GLuint createOgl33Program(const std::string& vertex_src, const std::string& frag
 		if(fragment_shader_id != 0){
 			glDeleteShader(fragment_shader_id);
 		}
-		return 0;
+		return criticalError("Couldn't create shader");
 	}
 
 	GLuint p_id = glCreateProgram();
@@ -812,7 +818,7 @@ GLuint createOgl33Program(const std::string& vertex_src, const std::string& frag
 	if (p_id == 0) {
 		glDeleteShader(vertex_shader_id);
 		glDeleteShader(fragment_shader_id);
-		return 0;
+		return criticalError("Couldn't create program");
 	}
 
 	glAttachShader(p_id, vertex_shader_id);
@@ -832,7 +838,7 @@ GLuint createOgl33Program(const std::string& vertex_src, const std::string& frag
 		// log_error(std::string{"Failed to compile "} + error_msg);
 		
 
-		return 0;
+		return criticalError("Failed to compile program");
 	}
 
 	glDetachShader(p_id, vertex_shader_id);
@@ -844,8 +850,14 @@ GLuint createOgl33Program(const std::string& vertex_src, const std::string& frag
 }
 }
 
-ProgramId Ogl33Render::createProgram(const std::string& vertex_src, const std::string& fragment_src){
-	GLuint p_id = createOgl33Program(vertex_src, fragment_src);
+ErrorOr<ProgramId> Ogl33Render::createProgram(const std::string& vertex_src, const std::string& fragment_src) noexcept {
+	ErrorOr<GLuint> error_p_id = createOgl33Program(vertex_src, fragment_src);
+
+	if(error_p_id.isError()){
+		return error_p_id.error().copyError();
+	}
+
+	GLuint& p_id = error_p_id.value();
 
 	GLuint mvp_id = glGetUniformLocation(p_id, "mvp");
 	GLuint texture_sampler_id = glGetUniformLocation(p_id, "texture_sampler");
@@ -853,7 +865,11 @@ ProgramId Ogl33Render::createProgram(const std::string& vertex_src, const std::s
 
 	ProgramId id = searchForFreeId(programs);
 
-	programs.insert(std::make_pair(id, Ogl33Program{p_id, texture_sampler_id, mvp_id, layer_id}));
+	try{
+		programs.insert(std::make_pair(id, Ogl33Program{p_id, texture_sampler_id, mvp_id, layer_id}));
+	}catch(const std::bad_alloc&){
+		return criticalError("Out of memory");
+	}
 
 	return id;
 }
@@ -920,57 +936,78 @@ void main(){
 )";
 }
 
-ProgramId Ogl33Render::createProgram(){
+ErrorOr<ProgramId> Ogl33Render::createProgram() noexcept {
 	return createProgram(default_vertex_shader_program, default_fragment_shader_program);
 }
 
-void Ogl33Render::destroyProgram(const ProgramId& id){
+Error Ogl33Render::destroyProgram(const ProgramId& id) noexcept {
 	programs.erase(id);
+	return noError();
 }
 
-RenderCameraId Ogl33Render::createCamera(){
+ErrorOr<RenderCameraId> Ogl33Render::createCamera() noexcept {
 
 	RenderCameraId id = searchForFreeId(cameras);
 
-	cameras.insert(std::make_pair(id, Ogl33Camera{}));
+	try{
+		cameras.insert(std::make_pair(id, Ogl33Camera{}));
+	}catch(const std::bad_alloc&){
+		return criticalError("Out of memory");
+	}
 	return id;
 }
 
-void Ogl33Render::setCameraOrthographic(const RenderCameraId& id, float l, float r, float t, float b){
+Error Ogl33Render::setCameraOrthographic(const RenderCameraId& id, float l, float r, float t, float b) noexcept {
 	auto find = cameras.find(id);
 	if(find != cameras.end()){
 		find->second.setOrtho(l, r, t , b);
+		return noError();
 	}
+
+	return criticalError("No camera found");
 }
 
-void Ogl33Render::setCameraPosition(const RenderCameraId& id, float x, float y){
+Error Ogl33Render::setCameraPosition(const RenderCameraId& id, float x, float y) noexcept {
 	auto find = cameras.find(id);
 	if(find != cameras.end()){
 		find->second.setViewPosition(x,y);
+		return noError();
 	}
+	return criticalError("No camera found");
 }
 
-void Ogl33Render::setCameraRotation(const RenderCameraId& id, float angle){
+Error Ogl33Render::setCameraRotation(const RenderCameraId& id, float angle) noexcept {
 	auto find = cameras.find(id);
 	if(find != cameras.end()){
 		find->second.setViewRotation(angle);
+		return noError();
 	}
+	return criticalError("No camera found");
 }
 
-void Ogl33Render::destroyCamera(const RenderCameraId& id){
+Error Ogl33Render::destroyCamera(const RenderCameraId& id) noexcept {
 	cameras.erase(id);
+	return noError();
 }
 
-RenderStageId Ogl33Render::createStage(const RenderTargetId& target_id, const RenderSceneId& scene, const RenderCameraId& cam, const ProgramId& program_id){
+ErrorOr<RenderStageId> Ogl33Render::createStage(const RenderTargetId& target_id, const RenderSceneId& scene, const RenderCameraId& cam, const ProgramId& program_id) noexcept {
 
 	RenderStageId id = searchForFreeId(render_stages);
-	render_stages.insert(std::make_pair(id, Ogl33RenderStage{target_id, scene, cam, program_id}));
-
-	render_target_stages.insert(std::make_pair(target_id, id));
+	try{
+		render_stages.insert(std::make_pair(id, Ogl33RenderStage{target_id, scene, cam, program_id}));
+	}catch(const std::bad_alloc&){
+		return criticalError("Out of memory");
+	}
+	try{
+		render_target_stages.insert(std::make_pair(target_id, id));
+	}catch(const std::bad_alloc&){
+		render_stages.erase(id);
+		return criticalError("Out of memory");
+	}
 	return id;
 }
 
-void Ogl33Render::destroyStage(const RenderStageId& id){
+Error Ogl33Render::destroyStage(const RenderStageId& id) noexcept {
 	auto find = render_stages.find(id);
 	if(find != render_stages.end()){
 		auto range = render_target_stages.equal_range(find->second.target_id);
@@ -983,98 +1020,142 @@ void Ogl33Render::destroyStage(const RenderStageId& id){
 		}
 
 		render_stages.erase(find);
+
+		return noError();
 	}
+
+	return criticalError("No RenderStage found");
 }
 
-RenderViewportId Ogl33Render::createViewport(){
+ErrorOr<RenderViewportId> Ogl33Render::createViewport() noexcept {
 	RenderViewportId id = searchForFreeId(viewports);
-	viewports.insert(std::make_pair(id, Ogl33Viewport{0.f,0.f,0.f,0.f}));
+	try{
+		viewports.insert(std::make_pair(id, Ogl33Viewport{0.f,0.f,0.f,0.f}));
+	}catch(const std::bad_alloc&){
+		return criticalError("Out of memory");
+	}
 	return id;
 }
 
-void Ogl33Render::setViewportRect(const RenderViewportId& id, float x, float y, float width, float height){
+Error Ogl33Render::setViewportRect(const RenderViewportId& id, float x, float y, float width, float height) noexcept {
 	auto find = viewports.find(id);
 	if(find != viewports.end()){
 		find->second = Ogl33Viewport{x, y, width, height};
+		return noError();
 	}
+	return criticalError("No Viewport found");
 }
 
-void Ogl33Render::destroyViewport(const RenderViewportId& id){
+Error Ogl33Render::destroyViewport(const RenderViewportId& id) noexcept {
 	viewports.erase(id);
+	return noError();
 }
 
-RenderPropertyId Ogl33Render::createProperty(const MeshId& mesh, const TextureId& texture){
+ErrorOr<RenderPropertyId> Ogl33Render::createProperty(const MeshId& mesh, const TextureId& texture) noexcept {
 	RenderPropertyId id = searchForFreeId(render_properties);
-	render_properties.insert(std::make_pair(id, Ogl33RenderProperty{mesh, texture}));
+	try{
+		render_properties.insert(std::make_pair(id, Ogl33RenderProperty{mesh, texture}));
+	}catch(const std::bad_alloc&){
+		return criticalError("Out of memory");
+	}
 	return id;
 }
 
-void Ogl33Render::setPropertyMesh(const RenderPropertyId& id, const MeshId& mesh_id) {
+Error Ogl33Render::setPropertyMesh(const RenderPropertyId& id, const MeshId& mesh_id) noexcept {
 	auto find = render_properties.find(id);
 	if(find != render_properties.end()){
 		find->second.mesh_id = mesh_id;
+		return noError();
 	}
+	return criticalError("No Property found");
 }
 
-void Ogl33Render::setPropertyTexture(const RenderPropertyId& id, const TextureId& texture_id) {
+Error Ogl33Render::setPropertyTexture(const RenderPropertyId& id, const TextureId& texture_id) noexcept {
 	auto find = render_properties.find(id);
 	if(find != render_properties.end()){
 		find->second.texture_id = texture_id;
+		return noError();
 	}
+	return criticalError("No Property found");
 }
 
-void Ogl33Render::destroyProperty(const RenderPropertyId& id){
+Error Ogl33Render::destroyProperty(const RenderPropertyId& id) noexcept {
 	render_properties.erase(id);
+	return noError();
 }
 
-RenderSceneId Ogl33Render::createScene(){
+ErrorOr<RenderSceneId> Ogl33Render::createScene() noexcept {
 	RenderSceneId id = searchForFreeId(scenes);
-	scenes.insert(std::make_pair(id, heap<Ogl33Scene>()));
+	try{
+		scenes.insert(std::make_pair(id, heap<Ogl33Scene>()));
+	}catch(const std::bad_alloc&){
+		return criticalError("Out of memory");
+	}
 	return id;
 }
 
-RenderObjectId Ogl33Render::createObject(const RenderSceneId& scene, const RenderPropertyId& prop){
+ErrorOr<RenderObjectId> Ogl33Render::createObject(const RenderSceneId& scene, const RenderPropertyId& prop) noexcept {
 	auto find = scenes.find(scene);
 	if(find != scenes.end()){
-		return find->second->createObject(prop);
+		RenderObjectId id = find->second->createObject(prop);
+		if(id == 0){
+			return criticalError("Couldn't create RenderObject");
+		}else {
+			return id;
+		}
 	}else{
-		return 0;
+		return criticalError("Couldn't find scene");
 	}
 }
 
-void Ogl33Render::destroyObject(const RenderSceneId& scene, const RenderObjectId& obj){
+Error Ogl33Render::destroyObject(const RenderSceneId& scene, const RenderObjectId& obj) noexcept {
 	auto find = scenes.find(scene);
 	if(find != scenes.end()){
 		find->second->destroyObject(obj);
+		return noError();
 	}
+	return criticalError("Couldn't find scene");
 }
 
-void Ogl33Render::setObjectPosition(const RenderSceneId& scene, const RenderObjectId& obj, float x, float y){
+Error Ogl33Render::setObjectPosition(const RenderSceneId& scene, const RenderObjectId& obj, float x, float y) noexcept {
 	auto find = scenes.find(scene);
 	if(find != scenes.end()){
 		find->second->setObjectPosition(obj, x, y);
+		/// @todo
+		/// Technically not noError
+		return noError();
 	}
+	return criticalError("Couldn't find scene");
 }
 
-void Ogl33Render::setObjectRotation(const RenderSceneId& scene, const RenderObjectId& obj, float angle){
+Error Ogl33Render::setObjectRotation(const RenderSceneId& scene, const RenderObjectId& obj, float angle) noexcept {
 	auto find = scenes.find(scene);
 	if(find != scenes.end()){
 		find->second->setObjectRotation(obj, angle);
+		/// @todo
+		/// Technically not noError
+		return noError();
 	}
+	return criticalError("Couldn't find scene");
 }
 
-void Ogl33Render::setObjectVisibility(const RenderSceneId& scene, const RenderObjectId& obj, bool visible){
+Error Ogl33Render::setObjectVisibility(const RenderSceneId& scene, const RenderObjectId& obj, bool visible) noexcept {
 	auto find = scenes.find(scene);
 	if(find != scenes.end()){
 		find->second->setObjectVisibility(obj, visible);
+		/// @todo
+		/// Technically not noError
+		return noError();
 	}
+	return criticalError("Couldn't find scene");
 }
 
-void Ogl33Render::destroyScene(const RenderSceneId& id){
+Error Ogl33Render::destroyScene(const RenderSceneId& id) noexcept {
 	scenes.erase(id);
+	return noError();
 }
 
-Mesh3dId Ogl33Render::createMesh3d(const Mesh3dData& data){
+ErrorOr<Mesh3dId> Ogl33Render::createMesh3d(const Mesh3dData& data) noexcept {
 	Mesh3dId id = searchForFreeId(meshes_3d);
 	std::array<GLuint,2> ids;
 
@@ -1106,106 +1187,155 @@ Mesh3dId Ogl33Render::createMesh3d(const Mesh3dData& data){
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 		glBindVertexArray(0);
 	#endif
-
-	meshes_3d.insert(std::make_pair(id, Ogl33Mesh3d{vao, std::move(ids), data.indices.size()}));
+	try{
+		meshes_3d.insert(std::make_pair(id, Ogl33Mesh3d{vao, std::move(ids), data.indices.size()}));
+	}catch(const std::bad_alloc& ){
+		return criticalError("Out of memory");
+	}
 	return id;
 }
 
-void Ogl33Render::destroyMesh3d(const Mesh3dId& id){
+Error Ogl33Render::destroyMesh3d(const Mesh3dId& id) noexcept {
 	meshes_3d.erase(id);
+	return noError();
 }
 
-RenderProperty3dId Ogl33Render::createProperty3d(const Mesh3dId& mesh, const TextureId& texture){
+ErrorOr<RenderProperty3dId> Ogl33Render::createProperty3d(const Mesh3dId& mesh, const TextureId& texture) noexcept {
 	RenderProperty3dId id = searchForFreeId(render_properties_3d);
-	render_properties_3d.insert(std::make_pair(id, Ogl33RenderProperty3d{mesh, texture}));
+	try{
+		render_properties_3d.insert(std::make_pair(id, Ogl33RenderProperty3d{mesh, texture}));
+	}catch(const std::bad_alloc& ){
+		return criticalError("Out of memory");
+	}
 	return id;
 }
 
-void Ogl33Render::destroyProperty3d(const RenderProperty3dId& id){
+Error Ogl33Render::destroyProperty3d(const RenderProperty3dId& id) noexcept {
 	render_properties_3d.erase(id);
+	return noError();
 }
 
-Program3dId Ogl33Render::createProgram3d(const std::string& vertex_src, const std::string& fragment_src){
-	GLuint p_id = createOgl33Program(vertex_src, fragment_src);
+ErrorOr<Program3dId> Ogl33Render::createProgram3d(const std::string& vertex_src, const std::string& fragment_src) noexcept {
+	ErrorOr<GLuint> error_p_id = createOgl33Program(vertex_src, fragment_src);
+
+	if(error_p_id.isError()){
+		return error_p_id.error().copyError();
+	}
+
+	GLuint& p_id = error_p_id.value();
 
 	GLuint mvp_id = glGetUniformLocation(p_id, "mvp");
 	GLuint texture_sampler_id = glGetUniformLocation(p_id, "texture_sampler");
 
 	Program3dId id = searchForFreeId(programs_3d);
-	programs_3d.insert(std::make_pair(id, Ogl33Program3d{p_id, texture_sampler_id, mvp_id}));
+	try{
+		programs_3d.insert(std::make_pair(id, Ogl33Program3d{p_id, texture_sampler_id, mvp_id}));
+	}catch(const std::bad_alloc&){
+		return criticalError("Out of memory");
+	}
 	return id;
 }
 
-Program3dId Ogl33Render::createProgram3d(){
+ErrorOr<Program3dId> Ogl33Render::createProgram3d() noexcept {
 	return createProgram3d(default_vertex_shader_program_3d, default_fragment_shader_program_3d);
 }
 
-void Ogl33Render::destroyProgram3d(const Program3dId& id){
+Error Ogl33Render::destroyProgram3d(const Program3dId& id) noexcept {
 	programs_3d.erase(id);
+	return noError();
 }
 
-RenderScene3dId Ogl33Render::createScene3d(){
+ErrorOr<RenderScene3dId> Ogl33Render::createScene3d() noexcept {
 	RenderScene3dId id = searchForFreeId(scenes_3d);
 
-	scenes_3d.insert(std::make_pair(id, Ogl33Scene3d{}));
+	try{
+		scenes_3d.insert(std::make_pair(id, Ogl33Scene3d{}));
+	}catch(const std::bad_alloc&){
+		return criticalError("Out of memory");
+	}
 
 	return id;
 }
 
-RenderObject3dId Ogl33Render::createObject3d(const RenderScene3dId& scene_id, const RenderProperty3dId& prop){
+ErrorOr<RenderObject3dId> Ogl33Render::createObject3d(const RenderScene3dId& scene_id, const RenderProperty3dId& prop) noexcept {
 	auto scene = scenes_3d.find(scene_id);
 	if(scene == scenes_3d.end()){
-		return 0;
+		return criticalError("Couldn't find scene");
 	}
 
-	return scene->second.createObject(prop);
+
+	RenderObject3dId id = scene->second.createObject(prop);
+	if(id == 0){
+		return criticalError("Couldn't create Object");
+	}else{
+		return id;
+	}
 }
 
-void Ogl33Render::destroyObject3d(const RenderScene3dId& scene_id, const RenderObject3dId& obj){
+Error Ogl33Render::destroyObject3d(const RenderScene3dId& scene_id, const RenderObject3dId& obj) noexcept {
 	auto scene = scenes_3d.find(scene_id);
 	if(scene == scenes_3d.end()){
-		return;
+		return criticalError("Couldn't find Scene");
 	}
 
-	scene->second.destroyObject(obj);	
+	scene->second.destroyObject(obj);
+	return noError();
 }
 
-RenderCamera3dId Ogl33Render::createCamera3d(){
+Error Ogl33Render::destroyScene3d(const RenderScene3dId& scene) noexcept {
+	scenes_3d.erase(scene);
+	return noError();
+}
+
+ErrorOr<RenderCamera3dId> Ogl33Render::createCamera3d() noexcept {
 	RenderScene3dId id = searchForFreeId(cameras_3d);
-	cameras_3d.insert(std::make_pair(id, Ogl33Camera3d{}));
+	try{
+		cameras_3d.insert(std::make_pair(id, Ogl33Camera3d{}));
+	}catch(const std::bad_alloc&){
+		return criticalError("Out of memory");
+	}
 	return id;
 }
-void Ogl33Render::setCamera3dPosition(const RenderCamera3dId& id, float x, float y, float z){
+Error Ogl33Render::setCamera3dPosition(const RenderCamera3dId& id, float x, float y, float z) noexcept {
 	auto find = cameras_3d.find(id);
 	if(find != cameras_3d.end()){
 		find->second.setViewPosition(x,y,z);
+		return noError();
 	}
+	return criticalError("Couldn't find Camera");
 }
 
-void Ogl33Render::setCamera3dOrthographic(const RenderCamera3dId& id, float, float, float, float, float, float){
-
+Error Ogl33Render::setCamera3dOrthographic(const RenderCamera3dId& id, float, float, float, float, float, float)noexcept {
+	return criticalError("Unimplemented");
 }
 
-void Ogl33Render::destroyCamera3d(const RenderCamera3dId& id){
+Error Ogl33Render::destroyCamera3d(const RenderCamera3dId& id) noexcept {
 	cameras_3d.erase(id);
+	return noError();
 }
 
-RenderStage3dId Ogl33Render::createStage3d(const RenderTargetId& target, const RenderScene3dId& scene, const RenderCamera3dId& camera, const Program3dId& program){
+ErrorOr<RenderStage3dId> Ogl33Render::createStage3d(const RenderTargetId& target, const RenderScene3dId& scene, const RenderCamera3dId& camera, const Program3dId& program) noexcept {
 	RenderStage3dId id = searchForFreeId(render_stages_3d);
 
-	render_stages_3d.insert(std::make_pair(id, Ogl33RenderStage3d{target, scene, camera, program}));
+	try{
+		render_stages_3d.insert(std::make_pair(id, Ogl33RenderStage3d{target, scene, camera, program}));
+	}catch(const std::bad_alloc&){
+		return criticalError("Out of memory");
+	}
 
-	render_target_stages_3d.insert(std::make_pair(target, id));
+	try{
+		render_target_stages_3d.insert(std::make_pair(target, id));
+	}catch(const std::bad_alloc&){
+		render_stages_3d.erase(id);
+		return criticalError("Out of memory");
+	}
 
 	return id;
 }
 
-void Ogl33Render::destroyStage3d(const RenderStage3dId& id){
+Error Ogl33Render::destroyStage3d(const RenderStage3dId& id) noexcept {
 	render_stages_3d.erase(id);
-}
-
-void Ogl33Render::destroyScene3d(const RenderScene3dId& scene){
-	scenes_3d.erase(scene);
+	return noError();
 }
 
 void Ogl33Render::stepRenderTargetTimes(const std::chrono::steady_clock::time_point& tp){
@@ -1220,14 +1350,14 @@ void Ogl33Render::stepRenderTargetTimes(const std::chrono::steady_clock::time_po
 	}
 }
 
-void Ogl33Render::flush(){
+void Ogl33Render::flush() noexcept {
 	assert(context);
 	if(context){
 		context->flush();
 	}
 }
 
-void Ogl33Render::step(const std::chrono::steady_clock::time_point& tp){
+void Ogl33Render::step(const std::chrono::steady_clock::time_point& tp) noexcept {
 	assert(context);
 	if(!context){
 		return;
@@ -1260,7 +1390,7 @@ void Ogl33Render::step(const std::chrono::steady_clock::time_point& tp){
 	}
 }
 
-void Ogl33Render::updateTime(const std::chrono::steady_clock::time_point& ){
+void Ogl33Render::updateTime(const std::chrono::steady_clock::time_point& ) noexcept {
 	/// @todo implement interpolation
 }
 }

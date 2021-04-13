@@ -100,94 +100,95 @@ public:
 	virtual ~LowLevelRender() = default;
 
 	// Mesh Operations
-	virtual ErrorOr<MeshId> createMesh(const MeshData&) = 0;
-	virtual Error setMeshData(const MeshId&, const MeshData&) = 0;
-	virtual Error destroyMesh(const MeshId&) = 0;
+	virtual ErrorOr<MeshId> createMesh(const MeshData&) noexcept = 0;
+	virtual Error setMeshData(const MeshId&, const MeshData&) noexcept = 0;
+	virtual Error destroyMesh(const MeshId&) noexcept = 0;
 
 	// Texture Operations
-	virtual ErrorOr<TextureId> createTexture(const Image&) = 0;
-	virtual Error destroyTexture(const TextureId&) = 0;
+	virtual ErrorOr<TextureId> createTexture(const Image&) noexcept = 0;
+	virtual Error destroyTexture(const TextureId&) noexcept = 0;
 
 	// Window Operations
-	virtual ErrorOr<RenderWindowId> createWindow(const RenderVideoMode&, const std::string& title) = 0;
-	virtual Error setWindowDesiredFPS(const RenderWindowId&, float fps) = 0;
-	virtual Error setWindowVisibility(const RenderWindowId& id, bool show) = 0;
-	virtual Conveyor<RenderEvent::Events> listenToWindowEvents(const RenderWindowId&) = 0;
-	virtual Error destroyWindow(const RenderWindowId& id) = 0;
+	virtual ErrorOr<RenderWindowId> createWindow(const RenderVideoMode&, const std::string& title) noexcept = 0;
+	virtual Error setWindowDesiredFPS(const RenderWindowId&, float fps) noexcept = 0;
+	virtual Error setWindowVisibility(const RenderWindowId& id, bool show) noexcept = 0;
+	virtual Error destroyWindow(const RenderWindowId& id) noexcept = 0;
+
+	virtual Conveyor<RenderEvent::Events> listenToWindowEvents(const RenderWindowId&) noexcept = 0;
 
 	// Program Operations
-	virtual ErrorOr<ProgramId> createProgram(const std::string& vertex_src, const std::string& fragment_src) = 0;
-	virtual ErrorOr<ProgramId> createProgram() = 0;
-	virtual Error destroyProgram(const ProgramId&) = 0;
+	virtual ErrorOr<ProgramId> createProgram(const std::string& vertex_src, const std::string& fragment_src) noexcept = 0;
+	virtual ErrorOr<ProgramId> createProgram() noexcept = 0;
+	virtual Error destroyProgram(const ProgramId&) noexcept = 0;
 
 	// Camera Operations
-	virtual ErrorOr<RenderCameraId> createCamera() = 0;
-	virtual Error setCameraPosition(const RenderCameraId&, float x, float y) = 0;
-	virtual Error setCameraRotation(const RenderCameraId&, float alpha) = 0;
-	virtual Error setCameraOrthographic(const RenderCameraId&, float, float, float, float) = 0;
-	virtual Error destroyCamera(const RenderCameraId&) = 0;
+	virtual ErrorOr<RenderCameraId> createCamera() noexcept = 0;
+	virtual Error setCameraPosition(const RenderCameraId&, float x, float y) noexcept = 0;
+	virtual Error setCameraRotation(const RenderCameraId&, float alpha) noexcept = 0;
+	virtual Error setCameraOrthographic(const RenderCameraId&, float, float, float, float) noexcept = 0;
+	virtual Error destroyCamera(const RenderCameraId&) noexcept = 0;
 
 	// Stage Operations
-	virtual ErrorOr<RenderStageId> createStage(const RenderTargetId& id, const RenderSceneId&, const RenderCameraId&, const ProgramId&) = 0;
-	virtual Error destroyStage(const RenderStageId&) = 0;
+	virtual ErrorOr<RenderStageId> createStage(const RenderTargetId& id, const RenderSceneId&, const RenderCameraId&, const ProgramId&) noexcept = 0;
+	virtual Error destroyStage(const RenderStageId&) noexcept = 0;
 
 	// Viewport Operations
-	virtual ErrorOr<RenderViewportId> createViewport() = 0;
-	virtual Error setViewportRect(const RenderViewportId&, float, float, float, float) = 0;
-	virtual Error destroyViewport(const RenderViewportId&) = 0;
+	virtual ErrorOr<RenderViewportId> createViewport() noexcept = 0;
+	virtual Error setViewportRect(const RenderViewportId&, float, float, float, float) noexcept = 0;
+	virtual Error destroyViewport(const RenderViewportId&) noexcept = 0;
 
 	// Property Operations
-	virtual ErrorOr<RenderPropertyId> createProperty(const MeshId&, const TextureId&) = 0;
-	virtual Error setPropertyMesh(const RenderPropertyId&, const MeshId& id) = 0;
-	virtual Error setPropertyTexture(const RenderPropertyId&, const TextureId& id) = 0;
-	virtual Error destroyProperty(const RenderPropertyId&) = 0;
+	virtual ErrorOr<RenderPropertyId> createProperty(const MeshId&, const TextureId&) noexcept = 0;
+	virtual Error setPropertyMesh(const RenderPropertyId&, const MeshId& id) noexcept = 0;
+	virtual Error setPropertyTexture(const RenderPropertyId&, const TextureId& id) noexcept = 0;
+	virtual Error destroyProperty(const RenderPropertyId&) noexcept = 0;
 
 	// Scene and Object Operations
-	virtual ErrorOr<RenderSceneId> createScene() = 0;
-	virtual ErrorOr<RenderObjectId> createObject(const RenderSceneId&, const RenderPropertyId&) = 0;
-	virtual Error destroyObject(const RenderSceneId&, const RenderObjectId&) = 0;
-	virtual Error setObjectPosition(const RenderSceneId&, const RenderObjectId&, float, float) = 0;
-	virtual Error setObjectRotation(const RenderSceneId&, const RenderObjectId&, float) = 0;
-	virtual Error setObjectVisibility(const RenderSceneId&, const RenderObjectId&, bool) = 0;
-	virtual Error destroyScene(const RenderSceneId&) = 0;
+	virtual ErrorOr<RenderSceneId> createScene() noexcept = 0;
+	virtual ErrorOr<RenderObjectId> createObject(const RenderSceneId&, const RenderPropertyId&) noexcept = 0;
+	virtual Error destroyObject(const RenderSceneId&, const RenderObjectId&) noexcept = 0;
+	virtual Error setObjectPosition(const RenderSceneId&, const RenderObjectId&, float, float) noexcept = 0;
+	virtual Error setObjectRotation(const RenderSceneId&, const RenderObjectId&, float) noexcept = 0;
+	virtual Error setObjectVisibility(const RenderSceneId&, const RenderObjectId&, bool) noexcept = 0;
+	virtual Error destroyScene(const RenderSceneId&) noexcept = 0;
 
 	//
 	// 3D Interface
 	//
 	// Mesh3d Operations
-	virtual Mesh3dId createMesh3d(const Mesh3dData&) = 0;
-	virtual Error destroyMesh3d(const Mesh3dId&) = 0;
+	virtual ErrorOr<Mesh3dId> createMesh3d(const Mesh3dData&) noexcept = 0;
+	virtual Error destroyMesh3d(const Mesh3dId&) noexcept = 0;
 	
 	// Property3d Operations
-	virtual ErrorOr<RenderProperty3dId> createProperty3d(const Mesh3dId&, const TextureId&) = 0;
-	virtual Error destroyProperty3d(const RenderProperty3dId&) = 0;
+	virtual ErrorOr<RenderProperty3dId> createProperty3d(const Mesh3dId&, const TextureId&) noexcept = 0;
+	virtual Error destroyProperty3d(const RenderProperty3dId&) noexcept = 0;
 	
 	// Program3d Operations
-	virtual ErrorOr<Program3dId> createProgram3d(const std::string& vertex_src, const std::string& fragment_src) = 0;
-	virtual ErrorOr<Program3dId> createProgram3d() = 0;
-	virtual Error destroyProgram3d(const Program3dId&) = 0;
+	virtual ErrorOr<Program3dId> createProgram3d(const std::string& vertex_src, const std::string& fragment_src) noexcept = 0;
+	virtual ErrorOr<Program3dId> createProgram3d() noexcept = 0;
+	virtual Error destroyProgram3d(const Program3dId&) noexcept = 0;
 	
 	// Camera3d Operations
-	virtual ErrorOr<RenderCamera3dId> createCamera3d() = 0;
-	virtual Error setCamera3dPosition(const RenderCamera3dId&, float, float, float) = 0;
-	virtual Error setCamera3dOrthographic(const RenderCamera3dId&, float, float, float, float, float, float) = 0;
-	virtual Error destroyCamera3d(const RenderCamera3dId&) = 0;
+	virtual ErrorOr<RenderCamera3dId> createCamera3d() noexcept = 0;
+	virtual Error setCamera3dPosition(const RenderCamera3dId&, float, float, float) noexcept = 0;
+	virtual Error setCamera3dOrthographic(const RenderCamera3dId&, float, float, float, float, float, float) noexcept = 0;
+	virtual Error destroyCamera3d(const RenderCamera3dId&) noexcept = 0;
 	
 	// Scene3d and Object3d Operations
-	virtual ErrorOr<RenderScene3dId> createScene3d() = 0;
-	virtual ErrorOr<RenderObject3dId> createObject3d(const RenderScene3dId&, const RenderProperty3dId&) = 0;
-	virtual Error destroyObject3d(const RenderScene3dId&, const RenderObject3dId&) = 0;
-	virtual Error destroyScene3d(const RenderScene3dId&) = 0;
+	virtual ErrorOr<RenderScene3dId> createScene3d() noexcept = 0;
+	virtual ErrorOr<RenderObject3dId> createObject3d(const RenderScene3dId&, const RenderProperty3dId&) noexcept = 0;
+	virtual Error destroyObject3d(const RenderScene3dId&, const RenderObject3dId&) noexcept = 0;
+	virtual Error destroyScene3d(const RenderScene3dId&) noexcept = 0;
 	//
 
-	virtual ErrorOr<RenderStage3dId> createStage3d(const RenderTargetId&, const RenderScene3dId&, const RenderCamera3dId&, const Program3dId&) = 0;
-	virtual Error destroyStage3d(const RenderStage3dId&) = 0;
+	virtual ErrorOr<RenderStage3dId> createStage3d(const RenderTargetId&, const RenderScene3dId&, const RenderCamera3dId&, const Program3dId&) noexcept = 0;
+	virtual Error destroyStage3d(const RenderStage3dId&) noexcept = 0;
 
 	/// @todo change time_point to microseconds and independent to steady_clock type
-	virtual void step(const std::chrono::steady_clock::time_point&) = 0;
-	virtual void flush() = 0;
+	virtual void step(const std::chrono::steady_clock::time_point&) noexcept = 0;
+	virtual void flush() noexcept = 0;
 
-	virtual void updateTime(const std::chrono::steady_clock::time_point&) = 0;
+	virtual void updateTime(const std::chrono::steady_clock::time_point&) noexcept = 0;
 };
 }
 

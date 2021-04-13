@@ -15,16 +15,40 @@ RenderPlugins::Plugin::Plugin(DynamicLibrary&& dl, std::function<LowLevelRender*
 {
 }
 
-RenderPlugins::RenderPlugins(std::filesystem::path&& fp, std::map<std::string, RenderPlugins::Plugin>&& p):
+RenderPlugins::RenderPlugins(std::filesystem::path&& fp, std::map<std::string, RenderPlugins::RenderPlugin>&& p):
 	directory{std::move(fp)},
 	render_plugins{std::move(p)}
 {}
 
-RenderPlugins::Plugin* RenderPlugins::getHandle(const std::string& name){
+RenderPlugins::~RenderPlugins(){
+	for(auto &iter : render_plugins){
+		if(iter.second.render){
+			iter.second.plugin.destroy_render(iter.second.render);
+			iter.second.render = nullptr;
+		}
+	}
+}
+
+LowLevelRender* RenderPlugins::getRenderer(AsyncIoProvider& provider, const std::string& name){
 	auto find = render_plugins.find(name);
 	if(find != render_plugins.end()){
-		return &find->second;
+		if(find->second.render){
+			return find->second.render;
+		}
+		RenderPlugins::RenderPlugin& rp = find->second;
+
+		assert(rp.plugin.create_render && rp.plugin.destroy_render);
+		if(rp.plugin.create_render && rp.plugin.destroy_render){
+			rp.render = rp.plugin.create_render(provider);
+			if(rp.render){
+				return rp.render;
+			}
+		}else{
+			render_plugins.erase(find);
+			return nullptr;
+		}
 	}
+
 	return nullptr;
 }
 
@@ -33,7 +57,7 @@ Own<RenderProvider> loadAllRenderPluginsIn(const std::filesystem::path& dir){
 		return heap<RenderPlugins>();
 	}
 
-	std::map<std::string, RenderPlugins::Plugin> plugins;
+	std::map<std::string, RenderPlugins::RenderPlugin> plugins;
 
 	for(auto& file: std::filesystem::directory_iterator(dir)){
 		std::filesystem::path path = file.path();
@@ -71,40 +95,26 @@ Own<RenderProvider> loadAllRenderPluginsIn(const std::filesystem::path& dir){
 
 		path_string = ps_view;
 
-		plugins.insert(std::make_pair(std::move(path_string), RenderPlugins::Plugin{std::move(lib.value()), std::move(create_render), std::move(destroy_render)}));
+		plugins.insert(std::make_pair(std::move(path_string), RenderPlugins::RenderPlugin{RenderPlugins::Plugin{std::move(lib.value()), std::move(create_render), std::move(destroy_render)}}));
 	}
 
-	return RenderPlugins{std::filesystem::path{dir}, std::move(plugins)};
+	return heap<RenderPlugins>(std::filesystem::path{dir}, std::move(plugins));
 }
 
-Graphics::Graphics(RenderPlugins&& rp):
-	render_plugins{std::move(rp)}
+Graphics::Graphics(Own<RenderProvider>&& rp):
+	render_provider{std::move(rp)}
 {}
 
 Graphics::~Graphics(){
-	for(auto iter = renderers.begin(); iter != renderers.end(); iter = renderers.erase(iter)){
-		iter->second.first->destroy_render(iter->second.second);
-	}
 }
 
 LowLevelRender* Graphics::getRenderer(AsyncIoProvider& provider, const std::string& name){
-	auto r_find = renderers.find(name);
-	if(r_find != renderers.end()){
-		return r_find->second.second;
-	}
-
-	auto handle = render_plugins.getHandle(name);
-	if(!handle){
+	assert(render_provider);
+	if(!render_provider){
 		return nullptr;
 	}
 
-	assert(handle->create_render && handle->destroy_render);
-	LowLevelRender* render = handle->create_render(provider);
-	if(!render){
-		return nullptr;
-	}
-
-	renderers.insert(std::make_pair(name, std::make_pair(handle,render)));
+	LowLevelRender* render = render_provider->getRenderer(provider, name);
 
 	return render;
 }

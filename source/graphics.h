@@ -23,7 +23,7 @@ public:
 	virtual ~RenderProvider() = default;
 
 	/// @todo build interface, because plugins aren't always available
-	// virtual LowLevelRender* getRenderer(const std::string& name) = 0;
+	virtual LowLevelRender* getRenderer(AsyncIoProvider& provider, const std::string& name) = 0;
 };
 
 class RenderPlugins : public RenderProvider {
@@ -39,21 +39,32 @@ public:
 		std::function<LowLevelRender*(AsyncIoProvider&)> create_render;
 		std::function<void(LowLevelRender*)> destroy_render;
 	};
+	
+	struct RenderPlugin{
+		RenderPlugins::Plugin plugin;
+		LowLevelRender* render;
+
+		RenderPlugin() = delete;
+
+		RenderPlugin(RenderPlugins::Plugin&& p):
+			plugin{std::move(p)}, render{nullptr}{}
+	};
 private:
 	std::filesystem::path directory;
 
 	/**
 	* The key part uses the plugin name
 	*/
-	std::map<std::string, RenderPlugins::Plugin> render_plugins;
+	std::map<std::string, RenderPlugins::RenderPlugin> render_plugins;
 public:
 	RenderPlugins() = default;
-	RenderPlugins(std::filesystem::path&&,std::map<std::string, RenderPlugins::Plugin>&&);
+	RenderPlugins(std::filesystem::path&&,std::map<std::string, RenderPlugins::RenderPlugin>&&);
 
-	~RenderPlugins() = default;
+	~RenderPlugins();
 
 	RenderPlugins(RenderPlugins&&) = default;
 	RenderPlugins& operator=(RenderPlugins&&) = default;
+	
 	/**
 	* Returns a renderer if it already exists. If it is not loaded yet
 	* it will try to find the plugin within the directory.
@@ -61,21 +72,22 @@ public:
 	*
 	* @param name search for the plugin by using the filename part without the extension
 	*/
-	Plugin* getHandle(const std::string& name);
+
+	LowLevelRender* getRenderer(AsyncIoProvider& provider, const std::string& name) override;
 };
 
 Own<RenderProvider> loadAllRenderPluginsIn(const std::filesystem::path& dir);
 
 class Graphics {
 private:
-	RenderPlugins render_plugins;
-	std::map<std::string, std::pair<RenderPlugins::Plugin*, LowLevelRender*>> renderers;
+	Own<RenderProvider> render_provider;
 public:
-	Graphics(RenderPlugins&& rp);
+	Graphics(Own<RenderProvider>&& rp);
 	~Graphics();
 
 	Graphics(Graphics&&) = default;
 	Graphics& operator=(Graphics&&) = default;
+
 	/**
 	* Returns a renderer if it already exists. If it is not loaded yet
 	* it will try to find the plugin within the parameters provided to RenderPlugins.
