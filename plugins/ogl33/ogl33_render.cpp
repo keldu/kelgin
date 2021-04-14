@@ -475,6 +475,61 @@ void Ogl33Scene::visit(const Ogl33Camera&, std::vector<RenderObject*>& render_qu
 	}
 }
 
+ErrorOr<RenderObject3dId> Ogl33Scene3d::createObject(const RenderProperty3dId& id) noexcept {
+	RenderObject3dId o_id = searchForFreeId(objects);
+
+	try{
+		objects.insert(std::make_pair(o_id, Ogl33Scene3d::RenderObject{id}));
+	}catch(const std::bad_alloc&){
+		return criticalError("Out of memory");
+	}
+
+	return o_id;
+}
+
+void Ogl33Scene3d::destroyObject(const RenderObject3dId& id){
+	objects.erase(id);
+	return;
+}
+
+Error Ogl33Scene3d::setObjectPosition(const RenderObject3dId& id, float x, float y, float z)noexcept{
+	auto find = objects.find(id);
+	if(find == objects.end()){
+		return criticalError("Couldn't find object");
+	}
+
+	find->second.x = x;
+	find->second.y = y;
+	find->second.z = z;
+
+	return noError();
+}
+
+Error Ogl33Scene3d::setObjectRotation(const RenderObject3dId& id, float a, float b, float g)noexcept{
+	auto find = objects.find(id);
+	if(find == objects.end()){
+		return criticalError("Couldn't find object");
+	}
+
+	find->second.alpha = a;
+	find->second.beta = b;
+	find->second.gamma = g;
+
+	return noError();
+}
+
+Error Ogl33Scene3d::setObjectVisibility(const RenderObject3dId& id, bool visible) noexcept{
+	auto find = objects.find(id);
+	if(find == objects.end()){
+		return criticalError("Couldn't find object");
+	}
+
+	find->second.visible = visible;
+
+	return noError();
+}
+
+
 void Ogl33RenderStage::renderOne(Ogl33Program& program, Ogl33RenderProperty& property, Ogl33Scene::RenderObject& object, Ogl33Mesh& mesh, Ogl33Texture& texture, Matrix<float, 3, 3>& vp){
 	program.setMesh(mesh);
 	program.setTexture(texture);
@@ -543,6 +598,41 @@ void Ogl33RenderStage::render(Ogl33Render& render){
 	}
 }
 
+void Ogl33RenderStage3d::renderOne(Ogl33Program3d& program, Ogl33RenderProperty3d& property, Ogl33Scene3d::RenderObject& object, Ogl33Mesh3d& mesh, Ogl33Texture& texture, Matrix<float, 4, 4>& vp){
+
+}
+
+void Ogl33RenderStage3d::render(Ogl33Render& render){
+	std::vector<Ogl33Scene3d::RenderObject> draw_queue;
+	Ogl33Scene3d* scene = render.getScene3d(scene_id);
+	assert(scene);
+	if(!scene){
+		return;
+	}
+
+	Ogl33Camera3d* camera = render.getCamera3d(camera_id);
+	assert(camera);
+	if(!camera){
+		return;
+	}
+
+	Ogl33Program3d* program = render.getProgram3d(program_id);
+	assert(program);
+	if(!program){
+		return;
+	}
+
+	scene->visit(*camera, draw_queue);
+
+	program->use();
+
+	Matrix<float, 4, 4> vp = camera->projection()*camera->view();
+
+	for(auto& iter: draw_queue){
+		renderOne();
+	}
+}
+
 Ogl33Render::Ogl33Render(Own<GlContext>&& ctx):
 	context{std::move(ctx)}
 {
@@ -554,10 +644,23 @@ Ogl33Render::~Ogl33Render(){
 	}
 }
 
+namespace {
+template<typename K, typename T>
+struct Ogl33RenderContainerReturnHelper {
+	static T* getElement(std::unordered_map<K, T>& ctr, const K& id){
+		auto iter = ctr.find(id);
+		if(iter != ctr.end()){
+			return &iter->second;
+		}
+		return nullptr;
+	}
+};
+}
+
 Ogl33Scene* Ogl33Render::getScene(const RenderSceneId& id) noexcept {
 	auto iter = scenes.find(id);
 	if(iter != scenes.end()){
-		return iter->second.get();
+		return &iter->second;
 	}
 	return nullptr;
 }
@@ -600,6 +703,26 @@ Ogl33Texture* Ogl33Render::getTexture(const TextureId& id) noexcept {
 		return &iter->second;
 	}
 	return nullptr;
+}
+
+Ogl33Scene3d* Ogl33Render::getScene3d(const RenderScene3dId& id) noexcept {
+	return Ogl33RenderContainerReturnHelper::getElement(scenes_3d, id);
+}
+
+Ogl33Camera3d* Ogl33Render::getCamera3d(const RenderCamera3dId& id) noexcept {
+	return Ogl33RenderContainerReturnHelper::getElement(cameras_3d, id);
+}
+
+Ogl33Program3d* Ogl33Render::getProgram3d(const Program3dId& id) noexcept {
+	return Ogl33RenderContainerReturnHelper::getElement(programs_3d, id);
+}
+
+Ogl33RenderProperty3d* Ogl33Render::getRenderProperty3d(const RenderProperty3dId& id) noexcept {
+	return Ogl33RenderContainerReturnHelper::getElement(render_properties_3d, id);
+}
+
+Ogl33Mesh3d* Ogl33Render::getMesh3d(const Mesh3dId& id) noexcept {
+	return Ogl33RenderContainerReturnHelper::getElement(meshes_3d, id);
 }
 
 ErrorOr<MeshId> Ogl33Render::createMesh(const MeshData& data) noexcept {
@@ -1087,7 +1210,7 @@ Error Ogl33Render::destroyProperty(const RenderPropertyId& id) noexcept {
 ErrorOr<RenderSceneId> Ogl33Render::createScene() noexcept {
 	RenderSceneId id = searchForFreeId(scenes);
 	try{
-		scenes.insert(std::make_pair(id, heap<Ogl33Scene>()));
+		scenes.insert(std::make_pair(id, Ogl33Scene{}));
 	}catch(const std::bad_alloc&){
 		return criticalError("Out of memory");
 	}
@@ -1097,7 +1220,7 @@ ErrorOr<RenderSceneId> Ogl33Render::createScene() noexcept {
 ErrorOr<RenderObjectId> Ogl33Render::createObject(const RenderSceneId& scene, const RenderPropertyId& prop) noexcept {
 	auto find = scenes.find(scene);
 	if(find != scenes.end()){
-		RenderObjectId id = find->second->createObject(prop);
+		RenderObjectId id = find->second.createObject(prop);
 		if(id == 0){
 			return criticalError("Couldn't create RenderObject");
 		}else {
@@ -1111,7 +1234,7 @@ ErrorOr<RenderObjectId> Ogl33Render::createObject(const RenderSceneId& scene, co
 Error Ogl33Render::destroyObject(const RenderSceneId& scene, const RenderObjectId& obj) noexcept {
 	auto find = scenes.find(scene);
 	if(find != scenes.end()){
-		find->second->destroyObject(obj);
+		find->second.destroyObject(obj);
 		return noError();
 	}
 	return criticalError("Couldn't find scene");
@@ -1120,7 +1243,7 @@ Error Ogl33Render::destroyObject(const RenderSceneId& scene, const RenderObjectI
 Error Ogl33Render::setObjectPosition(const RenderSceneId& scene, const RenderObjectId& obj, float x, float y) noexcept {
 	auto find = scenes.find(scene);
 	if(find != scenes.end()){
-		find->second->setObjectPosition(obj, x, y);
+		find->second.setObjectPosition(obj, x, y);
 		/// @todo
 		/// Technically not noError
 		return noError();
@@ -1131,7 +1254,7 @@ Error Ogl33Render::setObjectPosition(const RenderSceneId& scene, const RenderObj
 Error Ogl33Render::setObjectRotation(const RenderSceneId& scene, const RenderObjectId& obj, float angle) noexcept {
 	auto find = scenes.find(scene);
 	if(find != scenes.end()){
-		find->second->setObjectRotation(obj, angle);
+		find->second.setObjectRotation(obj, angle);
 		/// @todo
 		/// Technically not noError
 		return noError();
@@ -1142,7 +1265,7 @@ Error Ogl33Render::setObjectRotation(const RenderSceneId& scene, const RenderObj
 Error Ogl33Render::setObjectVisibility(const RenderSceneId& scene, const RenderObjectId& obj, bool visible) noexcept {
 	auto find = scenes.find(scene);
 	if(find != scenes.end()){
-		find->second->setObjectVisibility(obj, visible);
+		find->second.setObjectVisibility(obj, visible);
 		/// @todo
 		/// Technically not noError
 		return noError();

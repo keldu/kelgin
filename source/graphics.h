@@ -64,7 +64,7 @@ public:
 
 	RenderPlugins(RenderPlugins&&) = default;
 	RenderPlugins& operator=(RenderPlugins&&) = default;
-	
+
 	/**
 	* Returns a renderer if it already exists. If it is not loaded yet
 	* it will try to find the plugin within the directory.

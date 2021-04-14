@@ -138,6 +138,8 @@ public:
 	void setTexture(const Ogl33Texture&);
 	void setMvp(const Matrix<float, 4, 4>&);
 	void setMesh(const Ogl33Mesh3d&);
+
+	void use();
 };
 
 class Ogl33Program {
@@ -292,16 +294,22 @@ public:
 		float beta = 0.f;
 		float gamma = 0.f;
 		bool visible = true;
+
+		RenderObject(const RenderProperty3dId& p_id):id{p_id},x{0.f},y{0.f},z{0.f},alpha{0.f},
+		beta{0.f},gamma{0.f},visible{true}{}
 	};
 private:
 	std::unordered_map<RenderObject3dId, RenderObject> objects;
 public:
 
-	RenderObject3dId createObject(const RenderProperty3dId&);
-	void destroyObject(const RenderObject3dId&);
+	ErrorOr<RenderObject3dId> createObject(const RenderProperty3dId&) noexcept;
+	void destroyObject(const RenderObject3dId&) noexcept;
 
-	void setObjectPosition(const RenderObject3dId&, float, float, float);
-	void setObjectVisibility(const RenderObject3dId&, bool);
+	Error setObjectPosition(const RenderObject3dId&, float, float, float) noexcept;
+	Error setObjectRotation(const RenderObject3dId&, float, float, float) noexcept;
+	Error setObjectVisibility(const RenderObject3dId&, bool) noexcept;
+
+	void visit(const Ogl33Camera3d&, std::vector<RenderObject>&);
 };
 
 class Ogl33RenderStage {
@@ -318,14 +326,14 @@ public:
 
 class Ogl33RenderStage3d {
 private:
-	void renderOne();
+	void renderOne(Ogl33Program3d& program, Ogl33RenderProperty3d& property, Ogl33Scene3d::RenderObject& object, Ogl33Mesh3d& mesh, Ogl33Texture& texture, Matrix<float, 4, 4>& vp);
 public:
 	RenderTargetId target_id;
 	RenderScene3dId scene_id;
 	RenderCamera3dId camera_id;
 	Program3dId program_id;
 
-	void render();
+	void render(Ogl33Render& render);
 };
 
 class Ogl33Render final : public LowLevelRender {
@@ -345,7 +353,7 @@ private:
 	std::unordered_map<ProgramId, Ogl33Program> programs;
 	std::unordered_map<RenderCameraId, Ogl33Camera> cameras;
 	std::unordered_map<RenderPropertyId, Ogl33RenderProperty> render_properties;
-	std::unordered_map<RenderSceneId, Own<Ogl33Scene>> scenes;
+	std::unordered_map<RenderSceneId, Ogl33Scene> scenes;
 	std::unordered_map<RenderStageId, Ogl33RenderStage> render_stages;
 
 	// Stages listening  to RenderTarget changes
@@ -382,6 +390,12 @@ public:
 	Ogl33Mesh* getMesh(const MeshId&) noexcept;
 	Ogl33Texture* getTexture(const TextureId&) noexcept;
 
+	Ogl33Scene3d* getScene3d(const RenderScene3dId&) noexcept;
+	Ogl33Camera3d* getCamera3d(const RenderCamera3dId&) noexcept;
+	Ogl33Program3d* getProgram3d(const Program3dId&) noexcept;
+	Ogl33RenderProperty3d* getRenderProperty3d(const RenderProperty3dId&) noexcept;
+	Ogl33Mesh3d* getMesh3d(const Mesh3dId& ) noexcept;
+ 
 	ErrorOr<MeshId> createMesh(const MeshData&) noexcept override;
 	Error setMeshData(const MeshId&, const MeshData&) noexcept override;
 	Error destroyMesh(const MeshId&) noexcept override;
