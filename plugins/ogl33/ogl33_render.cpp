@@ -646,11 +646,25 @@ Ogl33Render::~Ogl33Render(){
 
 namespace {
 template<typename K, typename T>
-struct Ogl33RenderContainerReturnHelper {
+struct Ogl33RenderContainerReturnHelper;
+
+template<typename K, typename T>
+struct Ogl33RenderContainerReturnHelper<K,T> {
 	static T* getElement(std::unordered_map<K, T>& ctr, const K& id){
 		auto iter = ctr.find(id);
 		if(iter != ctr.end()){
 			return &iter->second;
+		}
+		return nullptr;
+	}
+};
+
+template<typename K, typename T>
+struct Ogl33RenderContainerReturnHelper<K, Own<T>> {
+	static T* getElement(std::unordered_map<K, Own<T>>& ctr, const K& id){
+		auto iter = ctr.find(id);
+		if(iter != ctr.end()){
+			return iter->second.get();
 		}
 		return nullptr;
 	}
@@ -706,23 +720,23 @@ Ogl33Texture* Ogl33Render::getTexture(const TextureId& id) noexcept {
 }
 
 Ogl33Scene3d* Ogl33Render::getScene3d(const RenderScene3dId& id) noexcept {
-	return Ogl33RenderContainerReturnHelper::getElement(scenes_3d, id);
+	return Ogl33RenderContainerReturnHelper<RenderScene3dId, Ogl33Scene3d>::getElement(scenes_3d, id);
 }
 
 Ogl33Camera3d* Ogl33Render::getCamera3d(const RenderCamera3dId& id) noexcept {
-	return Ogl33RenderContainerReturnHelper::getElement(cameras_3d, id);
+	return Ogl33RenderContainerReturnHelper<RenderCamera3dId, Ogl33Camera3d>::getElement(cameras_3d, id);
 }
 
 Ogl33Program3d* Ogl33Render::getProgram3d(const Program3dId& id) noexcept {
-	return Ogl33RenderContainerReturnHelper::getElement(programs_3d, id);
+	return Ogl33RenderContainerReturnHelper<Program3dId, Ogl33Program3d>::getElement(programs_3d, id);
 }
 
 Ogl33RenderProperty3d* Ogl33Render::getRenderProperty3d(const RenderProperty3dId& id) noexcept {
-	return Ogl33RenderContainerReturnHelper::getElement(render_properties_3d, id);
+	return Ogl33RenderContainerReturnHelper<RenderProperty3dId, Ogl33RenderProperty3d>::getElement(render_properties_3d, id);
 }
 
 Ogl33Mesh3d* Ogl33Render::getMesh3d(const Mesh3dId& id) noexcept {
-	return Ogl33RenderContainerReturnHelper::getElement(meshes_3d, id);
+	return Ogl33RenderContainerReturnHelper<Mesh3dId, Ogl33Mesh3d>::getElement(meshes_3d, id);
 }
 
 ErrorOr<MeshId> Ogl33Render::createMesh(const MeshData& data) noexcept {
@@ -1387,12 +1401,11 @@ ErrorOr<RenderObject3dId> Ogl33Render::createObject3d(const RenderScene3dId& sce
 	}
 
 
-	RenderObject3dId id = scene->second.createObject(prop);
-	if(id == 0){
-		return criticalError("Couldn't create Object");
-	}else{
-		return id;
+	ErrorOr<RenderObject3dId> err_id = scene->second.createObject(prop);
+	if(err_id.isError()){
+		return err_id.error().copyError();
 	}
+	return err_id.value();
 }
 
 Error Ogl33Render::destroyObject3d(const RenderScene3dId& scene_id, const RenderObject3dId& obj) noexcept {
