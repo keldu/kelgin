@@ -649,7 +649,7 @@ template<typename K, typename T>
 struct Ogl33RenderContainerReturnHelper;
 
 template<typename K, typename T>
-struct Ogl33RenderContainerReturnHelper<K,T> {
+struct Ogl33RenderContainerReturnHelper {
 	static T* getElement(std::unordered_map<K, T>& ctr, const K& id){
 		auto iter = ctr.find(id);
 		if(iter != ctr.end()){
@@ -828,7 +828,7 @@ Conveyor<TextureId> Ogl33Render::createTexture(const Image& image) noexcept {
 Conveyor<void> Ogl33Render::destroyTexture(const TextureId& id) noexcept {
 	textures.erase(id);
 
-	return Conveyor<void>{Void};
+	return Conveyor<void>{Void{}};
 }
 
 Conveyor<RenderWindowId> Ogl33Render::createWindow(const RenderVideoMode& mode, const std::string& title) noexcept {
@@ -1124,7 +1124,7 @@ Conveyor<void> Ogl33Render::setCameraRotation(const RenderCameraId& id, float an
 
 Conveyor<void> Ogl33Render::destroyCamera(const RenderCameraId& id) noexcept {
 	cameras.erase(id);
-	return Conveyor<void>{Void};
+	return Conveyor<void>{Void{}};
 }
 
 Conveyor<RenderStageId> Ogl33Render::createStage(const RenderTargetId& target_id, const RenderSceneId& scene, const RenderCameraId& cam, const ProgramId& program_id) noexcept {
