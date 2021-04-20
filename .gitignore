@@ -70,3 +70,6 @@ thoughts
 *.swp
 vgcore.*
 *.pdf
+
+# assets
+*.png

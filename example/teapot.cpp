@@ -34,6 +34,22 @@ int main(){
 	render->setWindowVisibility(win_id, true);
 	render->setWindowDesiredFPS(win_id, 60.0f);
 
+	Program3dId program_id = render->createProgram3d().value();
+
+	// Mesh3dId mesh_id = render->createMesh3d().value();
+
+	RenderScene3dId scene_id = render->createScene3d().value();
+
+	// RenderProperty3dId rp_id = render->createProperty3d(
+
+	RenderCamera3dId camera_id = render->createCamera3d().value();
+	float aspect = 600.f / 400.f;
+	float zoom = 10.f;
+
+	float near = 0.1f;
+	float far = 50.f;
+
+	RenderStage3dId stage_id = render->createStage(program_id, win_id, scene_id, camera_id);
 
 	auto old_time = std::chrono::steady_clock::now();
 	while (running) {
