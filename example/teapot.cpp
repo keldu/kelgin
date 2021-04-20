@@ -10,26 +10,28 @@
 #include <array>
 #include <cstring>
 
-int main(){
+int main() {
 	using namespace gin;
 
 	ErrorOr<AsyncIoContext> err_async = setupAsyncIo();
-	AsyncIoContext& async = err_async.value();
+	AsyncIoContext &async = err_async.value();
 	WaitScope wait_scope{async.event_loop};
 
 	bool running = true;
-	async.event_port.onSignal(Signal::Terminate).then([&running](){running = false;})
-	.detach();
+	async.event_port.onSignal(Signal::Terminate)
+		.then([&running]() { running = false; })
+		.detach();
 
 	Graphics graphics{loadAllRenderPluginsIn("./bin/plugins/")};
 	LowLevelRender *render = graphics.getRenderer(*async.io, "ogl33");
 
-	if(!render){
-		std::cerr<< "No ogl33 renderer present" << std::endl;
+	if (!render) {
+		std::cerr << "No ogl33 renderer present" << std::endl;
 		return -1;
 	}
 
-	RenderWindowId win_id = render->createWindow({600,400}, "Kelgin Setup Example").take().value();
+	RenderWindowId win_id =
+		render->createWindow({600, 400}, "Kelgin Setup Example").take().value();
 	render->flush();
 	render->setWindowVisibility(win_id, true);
 	render->setWindowDesiredFPS(win_id, 60.0f);
@@ -49,7 +51,10 @@ int main(){
 	float near = 0.1f;
 	float far = 50.f;
 
-	RenderStage3dId stage_id = render->createStage(program_id, win_id, scene_id, camera_id).take().value();
+	RenderStage3dId stage_id =
+		render->createStage(program_id, win_id, scene_id, camera_id)
+			.take()
+			.value();
 
 	auto old_time = std::chrono::steady_clock::now();
 	while (running) {

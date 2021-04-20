@@ -43,11 +43,12 @@ int main() {
 	using namespace gin;
 
 	ErrorOr<AsyncIoContext> err_async = setupAsyncIo();
-	if(err_async.isError()){
+	if (err_async.isError()) {
 		std::cerr << "Couldn't load AsyncIoContext" << std::endl;
 		return -1;
 	}
-	AsyncIoContext& async = err_async.value();
+
+	AsyncIoContext &async = err_async.value();
 	WaitScope wait_scope{async.event_loop};
 
 	bool running = true;
@@ -69,28 +70,36 @@ int main() {
 
 	//	=========================== Programs =================================
 	ProgramId program_id =
-		render->createProgram(default_vertex_shader, default_fragment_shader).take().value();
+		render->createProgram(default_vertex_shader, default_fragment_shader)
+			.take()
+			.value();
 
 	//	============================ Meshes ==================================
 	MeshId mesh_id = render->createMesh(default_mesh).take().value();
 	MeshId bg_mesh_id = render->createMesh(bg_mesh).take().value();
 
 	//  =========================== Textures =================================
-	TextureId texture_id = render->createTexture(loadFromFile("test.png")).take().value();
-	TextureId green_square_tex_id = render->createTexture(default_image).take().value();
-	TextureId bg_tex_id = render->createTexture(loadFromFile("bg.png")).take().value();
+	TextureId texture_id =
+		render->createTexture(loadFromFile("test.png")).take().value();
+	TextureId green_square_tex_id =
+		render->createTexture(default_image).take().value();
+	TextureId bg_tex_id =
+		render->createTexture(loadFromFile("bg.png")).take().value();
 
 	//	============================ Scenes ==================================
 	RenderSceneId scene_id = render->createScene().take().value();
 
 	//	===================== Render Properties ==============================
-	RenderPropertyId rp_id = render->createProperty(mesh_id, texture_id).take().value();
+	RenderPropertyId rp_id =
+		render->createProperty(mesh_id, texture_id).take().value();
 	RenderPropertyId gsq_rp_id =
 		render->createProperty(mesh_id, green_square_tex_id).take().value();
-	RenderPropertyId bg_rp_id = render->createProperty(bg_mesh_id, bg_tex_id).take().value();
+	RenderPropertyId bg_rp_id =
+		render->createProperty(bg_mesh_id, bg_tex_id).take().value();
 
 	//	======================= Render Objects ===============================
-	RenderObjectId ro_id = render->createObject(scene_id, gsq_rp_id).take().value();
+	RenderObjectId ro_id =
+		render->createObject(scene_id, gsq_rp_id).take().value();
 	std::array<std::array<RenderObjectId, 3>, 3> bg_ro_ids = {
 		render->createObject(scene_id, bg_rp_id).take().value(),
 		render->createObject(scene_id, bg_rp_id).take().value(),
@@ -117,7 +126,9 @@ int main() {
 								  2.0f * zoom);
 
 	RenderStageId stage_id =
-		render->createStage(program_id, win_id, scene_id, camera_id).take().value();
+		render->createStage(program_id, win_id, scene_id, camera_id)
+			.take()
+			.value();
 
 	int dx = 0;
 	int dy = 0;
