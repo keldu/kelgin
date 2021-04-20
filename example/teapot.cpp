@@ -29,27 +29,27 @@ int main(){
 		return -1;
 	}
 
-	RenderWindowId win_id = render->createWindow({600,400}, "Kelgin Setup Example").value();
+	RenderWindowId win_id = render->createWindow({600,400}, "Kelgin Setup Example").take().value();
 	render->flush();
 	render->setWindowVisibility(win_id, true);
 	render->setWindowDesiredFPS(win_id, 60.0f);
 
-	Program3dId program_id = render->createProgram3d().value();
+	Program3dId program_id = render->createProgram3d().take().value();
 
 	// Mesh3dId mesh_id = render->createMesh3d().value();
 
-	RenderScene3dId scene_id = render->createScene3d().value();
+	RenderScene3dId scene_id = render->createScene3d().take().value();
 
 	// RenderProperty3dId rp_id = render->createProperty3d(
 
-	RenderCamera3dId camera_id = render->createCamera3d().value();
+	RenderCamera3dId camera_id = render->createCamera3d().take().value();
 	float aspect = 600.f / 400.f;
 	float zoom = 10.f;
 
 	float near = 0.1f;
 	float far = 50.f;
 
-	RenderStage3dId stage_id = render->createStage(program_id, win_id, scene_id, camera_id);
+	RenderStage3dId stage_id = render->createStage(program_id, win_id, scene_id, camera_id).take().value();
 
 	auto old_time = std::chrono::steady_clock::now();
 	while (running) {

@@ -64,43 +64,43 @@ int main() {
 
 	//	========================= Render Windows =============================
 	RenderWindowId win_id =
-		render->createWindow({600, 400}, "Kelgin Setup Example").value();
+		render->createWindow({600, 400}, "Kelgin Setup Example").take().value();
 	render->flush();
 
 	//	=========================== Programs =================================
 	ProgramId program_id =
-		render->createProgram(default_vertex_shader, default_fragment_shader).value();
+		render->createProgram(default_vertex_shader, default_fragment_shader).take().value();
 
 	//	============================ Meshes ==================================
-	MeshId mesh_id = render->createMesh(default_mesh).value();
-	MeshId bg_mesh_id = render->createMesh(bg_mesh).value();
+	MeshId mesh_id = render->createMesh(default_mesh).take().value();
+	MeshId bg_mesh_id = render->createMesh(bg_mesh).take().value();
 
 	//  =========================== Textures =================================
-	TextureId texture_id = render->createTexture(loadFromFile("test.png")).value();
-	TextureId green_square_tex_id = render->createTexture(default_image).value();
-	TextureId bg_tex_id = render->createTexture(loadFromFile("bg.png")).value();
+	TextureId texture_id = render->createTexture(loadFromFile("test.png")).take().value();
+	TextureId green_square_tex_id = render->createTexture(default_image).take().value();
+	TextureId bg_tex_id = render->createTexture(loadFromFile("bg.png")).take().value();
 
 	//	============================ Scenes ==================================
-	RenderSceneId scene_id = render->createScene().value();
+	RenderSceneId scene_id = render->createScene().take().value();
 
 	//	===================== Render Properties ==============================
-	RenderPropertyId rp_id = render->createProperty(mesh_id, texture_id).value();
+	RenderPropertyId rp_id = render->createProperty(mesh_id, texture_id).take().value();
 	RenderPropertyId gsq_rp_id =
-		render->createProperty(mesh_id, green_square_tex_id).value();
-	RenderPropertyId bg_rp_id = render->createProperty(bg_mesh_id, bg_tex_id).value();
+		render->createProperty(mesh_id, green_square_tex_id).take().value();
+	RenderPropertyId bg_rp_id = render->createProperty(bg_mesh_id, bg_tex_id).take().value();
 
 	//	======================= Render Objects ===============================
-	RenderObjectId ro_id = render->createObject(scene_id, gsq_rp_id).value();
+	RenderObjectId ro_id = render->createObject(scene_id, gsq_rp_id).take().value();
 	std::array<std::array<RenderObjectId, 3>, 3> bg_ro_ids = {
-		render->createObject(scene_id, bg_rp_id).value(),
-		render->createObject(scene_id, bg_rp_id).value(),
-		render->createObject(scene_id, bg_rp_id).value(),
-		render->createObject(scene_id, bg_rp_id).value(),
-		render->createObject(scene_id, bg_rp_id).value(),
-		render->createObject(scene_id, bg_rp_id).value(),
-		render->createObject(scene_id, bg_rp_id).value(),
-		render->createObject(scene_id, bg_rp_id).value(),
-		render->createObject(scene_id, bg_rp_id).value()};
+		render->createObject(scene_id, bg_rp_id).take().value(),
+		render->createObject(scene_id, bg_rp_id).take().value(),
+		render->createObject(scene_id, bg_rp_id).take().value(),
+		render->createObject(scene_id, bg_rp_id).take().value(),
+		render->createObject(scene_id, bg_rp_id).take().value(),
+		render->createObject(scene_id, bg_rp_id).take().value(),
+		render->createObject(scene_id, bg_rp_id).take().value(),
+		render->createObject(scene_id, bg_rp_id).take().value(),
+		render->createObject(scene_id, bg_rp_id).take().value()};
 
 	for (size_t i = 0; i < 3; ++i) {
 		for (size_t j = 0; j < 3; ++j) {
@@ -109,7 +109,7 @@ int main() {
 		}
 	}
 
-	RenderCameraId camera_id = render->createCamera().value();
+	RenderCameraId camera_id = render->createCamera().take().value();
 	float aspect = 600.f / 400.f;
 	float zoom = 10.f;
 	render->setCameraOrthographic(camera_id, -2.0f * aspect * zoom,
@@ -117,7 +117,7 @@ int main() {
 								  2.0f * zoom);
 
 	RenderStageId stage_id =
-		render->createStage(program_id, win_id, scene_id, camera_id).value();
+		render->createStage(program_id, win_id, scene_id, camera_id).take().value();
 
 	int dx = 0;
 	int dy = 0;

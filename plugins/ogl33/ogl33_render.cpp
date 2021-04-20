@@ -629,7 +629,7 @@ void Ogl33RenderStage3d::render(Ogl33Render& render){
 	Matrix<float, 4, 4> vp = camera->projection()*camera->view();
 
 	for(auto& iter: draw_queue){
-		renderOne();
+		// renderOne();
 	}
 }
 
