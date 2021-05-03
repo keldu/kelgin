@@ -1127,7 +1127,7 @@ Conveyor<void> Ogl33Render::destroyCamera(const RenderCameraId& id) noexcept {
 	return Conveyor<void>{Void{}};
 }
 
-Conveyor<RenderStageId> Ogl33Render::createStage(const RenderTargetId& target_id, const RenderSceneId& scene, const RenderCameraId& cam, const ProgramId& program_id) noexcept {
+Conveyor<RenderStageId> Ogl33Render::createStage(const RenderTargetId& target_id, const RenderViewportId&, const RenderSceneId& scene, const RenderCameraId& cam, const ProgramId& program_id) noexcept {
 
 	RenderStageId id = searchForFreeId(render_stages);
 	try{

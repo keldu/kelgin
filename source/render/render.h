@@ -9,28 +9,29 @@
 #include <variant>
 
 namespace gin {
-using MeshId = ResourceId;
 using TextureId = ResourceId;
-using ProgramId = ResourceId;
-using RenderPropertyId = ResourceId;
-using RenderObjectId = ResourceId;
-using RenderWorldId = ResourceId;
-using RenderSceneId = ResourceId;
 using RenderTargetId = ResourceId;
 using RenderTextureId = RenderTargetId;
 using RenderWindowId = RenderTargetId;
-
-using RenderCameraId = ResourceId;
-using RenderStageId = ResourceId;
 using RenderViewportId = ResourceId;
+
+using MeshId = ResourceId;
+using ProgramId = ResourceId;
+using RenderCameraId = ResourceId;
+using RenderPropertyId = ResourceId;
+using RenderObjectId = ResourceId;
+using RenderSceneId = ResourceId;
+using RenderStageId = ResourceId;
+using RenderAnimationId = ResourceId;
 
 using Mesh3dId = ResourceId;
 using Program3dId = ResourceId;
 using RenderCamera3dId = ResourceId;
-using RenderStage3dId = ResourceId;
 using RenderProperty3dId = ResourceId;
-using RenderScene3dId = ResourceId;
 using RenderObject3dId = ResourceId;
+using RenderScene3dId = ResourceId;
+using RenderStage3dId = ResourceId;
+using RenderAnimation3dId = ResourceId;
 
 class MeshData {
 public:
@@ -96,27 +97,14 @@ struct RenderVideoMode {
 
 /// @todo Add a better timer. The sleeping call needs to know when it should wake up
 /// And Render should know when one of its windows needs to render.
-class LowLevelRender {
+class LowLevelRender2D {
 protected:
+	~LowLevelRender2D() = default;
 public:
-	virtual ~LowLevelRender() = default;
-
 	// Mesh Operations
 	virtual Conveyor<MeshId> createMesh(const MeshData&) noexcept = 0;
 	virtual Conveyor<void> setMeshData(const MeshId&, const MeshData&) noexcept = 0;
 	virtual Conveyor<void> destroyMesh(const MeshId&) noexcept = 0;
-
-	// Texture Operations
-	virtual Conveyor<TextureId> createTexture(const Image&) noexcept = 0;
-	virtual Conveyor<void> destroyTexture(const TextureId&) noexcept = 0;
-
-	// Window Operations
-	virtual Conveyor<RenderWindowId> createWindow(const RenderVideoMode&, const std::string& title) noexcept = 0;
-	virtual Conveyor<void> setWindowDesiredFPS(const RenderWindowId&, float fps) noexcept = 0;
-	virtual Conveyor<void> setWindowVisibility(const RenderWindowId& id, bool show) noexcept = 0;
-	virtual Conveyor<void> destroyWindow(const RenderWindowId& id) noexcept = 0;
-
-	virtual Conveyor<RenderEvent::Events> listenToWindowEvents(const RenderWindowId&) noexcept = 0;
 
 	// Program Operations
 	virtual Conveyor<ProgramId> createProgram(const std::string& vertex_src, const std::string& fragment_src) noexcept = 0;
@@ -129,15 +117,6 @@ public:
 	virtual Conveyor<void> setCameraRotation(const RenderCameraId&, float alpha) noexcept = 0;
 	virtual Conveyor<void> setCameraOrthographic(const RenderCameraId&, float, float, float, float) noexcept = 0;
 	virtual Conveyor<void> destroyCamera(const RenderCameraId&) noexcept = 0;
-
-	// Stage Operations
-	virtual Conveyor<RenderStageId> createStage(const RenderTargetId& id, const RenderSceneId&, const RenderCameraId&, const ProgramId&) noexcept = 0;
-	virtual Conveyor<void> destroyStage(const RenderStageId&) noexcept = 0;
-
-	// Viewport Operations
-	virtual Conveyor<RenderViewportId> createViewport() noexcept = 0;
-	virtual Conveyor<void> setViewportRect(const RenderViewportId&, float, float, float, float) noexcept = 0;
-	virtual Conveyor<void> destroyViewport(const RenderViewportId&) noexcept = 0;
 
 	// Property Operations
 	virtual Conveyor<RenderPropertyId> createProperty(const MeshId&, const TextureId&) noexcept = 0;
@@ -154,17 +133,27 @@ public:
 	virtual Conveyor<void> setObjectVisibility(const RenderSceneId&, const RenderObjectId&, bool) noexcept = 0;
 	virtual Conveyor<void> destroyScene(const RenderSceneId&) noexcept = 0;
 
-	//
-	// 3D Interface
-	//
+	// Stage Operations
+	virtual Conveyor<RenderStageId> createStage(const RenderTargetId& id, const RenderViewportId&, const RenderSceneId&, const RenderCameraId&, const ProgramId&) noexcept = 0;
+	virtual Conveyor<void> destroyStage(const RenderStageId&) noexcept = 0;
+
+	// Animation Operations
+	// virtual Conveyor<RenderAnimationId> createAnimation() noexcept = 0;
+	// virtual Conveyor<void> destroyAnimation(const RenderAnimationId&) noexcept = 0;
+};
+
+class LowLevelRender3D {
+protected:
+	~LowLevelRender3D() = default;
+public:
 	// Mesh3d Operations
 	virtual Conveyor<Mesh3dId> createMesh3d(const Mesh3dData&) noexcept = 0;
 	virtual Conveyor<void> destroyMesh3d(const Mesh3dId&) noexcept = 0;
-	
+
 	// Property3d Operations
 	virtual Conveyor<RenderProperty3dId> createProperty3d(const Mesh3dId&, const TextureId&) noexcept = 0;
 	virtual Conveyor<void> destroyProperty3d(const RenderProperty3dId&) noexcept = 0;
-	
+
 	// Program3d Operations
 	virtual Conveyor<Program3dId> createProgram3d(const std::string& vertex_src, const std::string& fragment_src) noexcept = 0;
 	virtual Conveyor<Program3dId> createProgram3d() noexcept = 0;
@@ -181,10 +170,40 @@ public:
 	virtual Conveyor<RenderObject3dId> createObject3d(const RenderScene3dId&, const RenderProperty3dId&) noexcept = 0;
 	virtual Conveyor<void> destroyObject3d(const RenderScene3dId&, const RenderObject3dId&) noexcept = 0;
 	virtual Conveyor<void> destroyScene3d(const RenderScene3dId&) noexcept = 0;
-	//
 
-	virtual Conveyor<RenderStage3dId> createStage3d(const RenderTargetId&, const RenderScene3dId&, const RenderCamera3dId&, const Program3dId&) noexcept = 0;
+	// Stage3d Operations
+	virtual Conveyor<RenderStage3dId> createStage3d(const RenderTargetId&, const RenderViewportId&, const RenderScene3dId&, const RenderCamera3dId&, const Program3dId&) noexcept = 0;
 	virtual Conveyor<void> destroyStage3d(const RenderStage3dId&) noexcept = 0;
+
+	// Animation3d Operations
+	// virtual Conveyor<RenderAnimation3d>
+};
+
+
+class LowLevelRender {
+protected:
+public:
+	virtual ~LowLevelRender() = default;
+
+	virtual LowLevelRender2D* interface2D() noexcept = 0;
+	virtual LowLevelRender3D* interface3D() noexcept = 0;
+
+	// Texture Operations
+	virtual Conveyor<TextureId> createTexture(const Image&) noexcept = 0;
+	virtual Conveyor<void> destroyTexture(const TextureId&) noexcept = 0;
+
+	// Window Operations
+	virtual Conveyor<RenderWindowId> createWindow(const RenderVideoMode&, const std::string& title) noexcept = 0;
+	virtual Conveyor<void> setWindowDesiredFPS(const RenderWindowId&, float fps) noexcept = 0;
+	virtual Conveyor<void> setWindowVisibility(const RenderWindowId& id, bool show) noexcept = 0;
+	virtual Conveyor<void> destroyWindow(const RenderWindowId& id) noexcept = 0;
+
+	virtual Conveyor<RenderEvent::Events> listenToWindowEvents(const RenderWindowId&) noexcept = 0;
+
+	// Viewport Operations
+	virtual Conveyor<RenderViewportId> createViewport() noexcept = 0;
+	virtual Conveyor<void> setViewportRect(const RenderViewportId&, float, float, float, float) noexcept = 0;
+	virtual Conveyor<void> destroyViewport(const RenderViewportId&) noexcept = 0;
 
 	/// @todo change time_point to microseconds and independent to steady_clock type
 	virtual void step(const std::chrono::steady_clock::time_point&) noexcept = 0;

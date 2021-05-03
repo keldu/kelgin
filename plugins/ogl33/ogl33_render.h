@@ -336,7 +336,7 @@ public:
 	void render(Ogl33Render& render);
 };
 
-class Ogl33Render final : public LowLevelRender {
+class Ogl33Render final : public LowLevelRender, public LowLevelRender2D, public LowLevelRender3D {
 private:
 	Own<GlContext> context;
 
@@ -395,6 +395,9 @@ public:
 	Ogl33Program3d* getProgram3d(const Program3dId&) noexcept;
 	Ogl33RenderProperty3d* getRenderProperty3d(const RenderProperty3dId&) noexcept;
 	Ogl33Mesh3d* getMesh3d(const Mesh3dId& ) noexcept;
+
+	LowLevelRender2D* interface2D() noexcept override {return this;}
+	LowLevelRender3D* interface3D() noexcept override {return this;}
  
 	Conveyor<MeshId> createMesh(const MeshData&) noexcept override;
 	Conveyor<void> setMeshData(const MeshId&, const MeshData&) noexcept override;
@@ -420,7 +423,7 @@ public:
 	Conveyor<void> setCameraOrthographic(const RenderCameraId&, float, float, float, float) noexcept override;
 	Conveyor<void> destroyCamera(const RenderCameraId&) noexcept override;
 	
-	Conveyor<RenderStageId> createStage(const RenderTargetId& id, const RenderSceneId&, const RenderCameraId&, const ProgramId&) noexcept override;
+	Conveyor<RenderStageId> createStage(const RenderTargetId& id, const RenderViewportId&, const RenderSceneId&, const RenderCameraId&, const ProgramId&) noexcept override;
 	Conveyor<void> destroyStage(const RenderStageId&) noexcept override;
 
 	Conveyor<RenderViewportId> createViewport() noexcept override;

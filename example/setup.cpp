@@ -68,25 +68,15 @@ int main() {
 
 	render->createWindow({600,400}, "Kelgin Setup Example").then([&render, &win_id](RenderWindowId id){
 		render->flush();
-		
-		std::cout << "A run" << std::endl;
 
 		render->setWindowVisibility(id, true).then([&render,id](){
 			render->setWindowDesiredFPS(id, 60.f).detach();
-			std::cout << "A run2 " << std::endl;
 		}).detach();
 
 		win_id = id;
 	}).detach();
 
 	wait_scope.poll();
-	wait_scope.poll();
-	wait_scope.poll();
-	wait_scope.poll();
-	wait_scope.poll();
-	wait_scope.poll();
-
-	return 0;
 
 	//	=========================== Programs =================================
 	ProgramId program_id =
