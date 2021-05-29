@@ -317,6 +317,7 @@ private:
 	void renderOne(Ogl33Program& program, Ogl33RenderProperty& property, Ogl33Scene::RenderObject& object, Ogl33Mesh& mesh, Ogl33Texture&, Matrix<float, 3, 3>& vp);
 public:
 	RenderTargetId target_id;
+	RenderViewportId viewport_id;
 	RenderSceneId scene_id;
 	RenderCameraId camera_id;
 	ProgramId program_id;
@@ -329,6 +330,7 @@ private:
 	void renderOne(Ogl33Program3d& program, Ogl33RenderProperty3d& property, Ogl33Scene3d::RenderObject& object, Ogl33Mesh3d& mesh, Ogl33Texture& texture, Matrix<float, 4, 4>& vp);
 public:
 	RenderTargetId target_id;
+	RenderViewportId viewport_id;
 	RenderScene3dId scene_id;
 	RenderCamera3dId camera_id;
 	Program3dId program_id;
@@ -465,7 +467,7 @@ public:
 	Conveyor<void> setCamera3dOrthographic(const RenderCamera3dId&, float, float, float, float, float, float) noexcept override;
 	Conveyor<void> destroyCamera3d(const RenderCamera3dId&) noexcept override;
 
-	Conveyor<RenderStage3dId> createStage3d(const RenderTargetId&, const RenderScene3dId&, const RenderCamera3dId&, const Program3dId&) noexcept override;
+	Conveyor<RenderStage3dId> createStage3d(const RenderTargetId&, const RenderViewportId&, const RenderScene3dId&, const RenderCamera3dId&, const Program3dId&) noexcept override;
 	Conveyor<void> destroyStage3d(const RenderStage3dId&) noexcept override;
 
 	void step(const std::chrono::steady_clock::time_point&) noexcept override;

@@ -15,4 +15,4 @@ struct DaemonConfig {
 };
 
 Own<DaemonConfig> loadConfig();
-}
+} // namespace gin

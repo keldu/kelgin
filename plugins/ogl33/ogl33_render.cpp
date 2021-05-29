@@ -1127,11 +1127,11 @@ Conveyor<void> Ogl33Render::destroyCamera(const RenderCameraId& id) noexcept {
 	return Conveyor<void>{Void{}};
 }
 
-Conveyor<RenderStageId> Ogl33Render::createStage(const RenderTargetId& target_id, const RenderViewportId&, const RenderSceneId& scene, const RenderCameraId& cam, const ProgramId& program_id) noexcept {
+Conveyor<RenderStageId> Ogl33Render::createStage(const RenderTargetId& target_id, const RenderViewportId& viewport_id, const RenderSceneId& scene, const RenderCameraId& cam, const ProgramId& program_id) noexcept {
 
 	RenderStageId id = searchForFreeId(render_stages);
 	try{
-		render_stages.insert(std::make_pair(id, Ogl33RenderStage{target_id, scene, cam, program_id}));
+		render_stages.insert(std::make_pair(id, Ogl33RenderStage{target_id, viewport_id, scene, cam, program_id}));
 	}catch(const std::bad_alloc&){
 		return Conveyor<RenderStageId>{criticalError("Out of memory")};
 	}
@@ -1449,11 +1449,11 @@ Conveyor<void> Ogl33Render::destroyCamera3d(const RenderCamera3dId& id) noexcept
 	return Conveyor<void>{Void{}};
 }
 
-Conveyor<RenderStage3dId> Ogl33Render::createStage3d(const RenderTargetId& target, const RenderScene3dId& scene, const RenderCamera3dId& camera, const Program3dId& program) noexcept {
+Conveyor<RenderStage3dId> Ogl33Render::createStage3d(const RenderTargetId& target, const RenderViewportId& viewport_id, const RenderScene3dId& scene, const RenderCamera3dId& camera, const Program3dId& program) noexcept {
 	RenderStage3dId id = searchForFreeId(render_stages_3d);
 
 	try{
-		render_stages_3d.insert(std::make_pair(id, Ogl33RenderStage3d{target, scene, camera, program}));
+		render_stages_3d.insert(std::make_pair(id, Ogl33RenderStage3d{target, viewport_id, scene, camera, program}));
 	}catch(const std::bad_alloc&){
 		return Conveyor<RenderStage3dId>{criticalError("Out of memory")};
 	}

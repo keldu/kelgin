@@ -63,30 +63,40 @@ int main() {
 		return -1;
 	}
 
+	gin::LowLevelRender2D *render_2d = render->interface2D();
+	if (!render_2d) {
+		std::cout << "Missing 2D interface" << std::endl;
+		return -1;
+	}
+
 	//	========================= Render Windows =============================
 	RenderWindowId win_id = 0;
 
-	render->createWindow({600,400}, "Kelgin Setup Example").then([&render, &win_id](RenderWindowId id){
-		render->flush();
+	render->createWindow({600, 400}, "Kelgin Setup Example")
+		.then([&render, &win_id](RenderWindowId id) {
+			render->flush();
 
-		render->setWindowVisibility(id, true).then([&render,id](){
-			render->setWindowDesiredFPS(id, 60.f).detach();
-		}).detach();
+			render->setWindowVisibility(id, true)
+				.then([&render, id]() {
+					render->setWindowDesiredFPS(id, 60.f).detach();
+				})
+				.detach();
 
-		win_id = id;
-	}).detach();
+			win_id = id;
+		})
+		.detach();
 
 	wait_scope.poll();
 
 	//	=========================== Programs =================================
 	ProgramId program_id =
-		render->createProgram(default_vertex_shader, default_fragment_shader)
+		render_2d->createProgram(default_vertex_shader, default_fragment_shader)
 			.take()
 			.value();
 
 	//	============================ Meshes ==================================
-	MeshId mesh_id = render->createMesh(default_mesh).take().value();
-	MeshId bg_mesh_id = render->createMesh(bg_mesh).take().value();
+	MeshId mesh_id = render_2d->createMesh(default_mesh).take().value();
+	MeshId bg_mesh_id = render_2d->createMesh(bg_mesh).take().value();
 
 	//  =========================== Textures =================================
 	TextureId texture_id =
@@ -97,46 +107,49 @@ int main() {
 		render->createTexture(loadFromFile("bg.png")).take().value();
 
 	//	============================ Scenes ==================================
-	RenderSceneId scene_id = render->createScene().take().value();
+	RenderSceneId scene_id = render_2d->createScene().take().value();
 
 	//	===================== Render Properties ==============================
 	RenderPropertyId rp_id =
-		render->createProperty(mesh_id, texture_id).take().value();
+		render_2d->createProperty(mesh_id, texture_id).take().value();
 	RenderPropertyId gsq_rp_id =
-		render->createProperty(mesh_id, green_square_tex_id).take().value();
+		render_2d->createProperty(mesh_id, green_square_tex_id).take().value();
 	RenderPropertyId bg_rp_id =
-		render->createProperty(bg_mesh_id, bg_tex_id).take().value();
+		render_2d->createProperty(bg_mesh_id, bg_tex_id).take().value();
 
 	//	======================= Render Objects ===============================
 	RenderObjectId ro_id =
-		render->createObject(scene_id, gsq_rp_id).take().value();
+		render_2d->createObject(scene_id, gsq_rp_id).take().value();
 	std::array<std::array<RenderObjectId, 3>, 3> bg_ro_ids = {
-		render->createObject(scene_id, bg_rp_id).take().value(),
-		render->createObject(scene_id, bg_rp_id).take().value(),
-		render->createObject(scene_id, bg_rp_id).take().value(),
-		render->createObject(scene_id, bg_rp_id).take().value(),
-		render->createObject(scene_id, bg_rp_id).take().value(),
-		render->createObject(scene_id, bg_rp_id).take().value(),
-		render->createObject(scene_id, bg_rp_id).take().value(),
-		render->createObject(scene_id, bg_rp_id).take().value(),
-		render->createObject(scene_id, bg_rp_id).take().value()};
+		render_2d->createObject(scene_id, bg_rp_id).take().value(),
+		render_2d->createObject(scene_id, bg_rp_id).take().value(),
+		render_2d->createObject(scene_id, bg_rp_id).take().value(),
+		render_2d->createObject(scene_id, bg_rp_id).take().value(),
+		render_2d->createObject(scene_id, bg_rp_id).take().value(),
+		render_2d->createObject(scene_id, bg_rp_id).take().value(),
+		render_2d->createObject(scene_id, bg_rp_id).take().value(),
+		render_2d->createObject(scene_id, bg_rp_id).take().value(),
+		render_2d->createObject(scene_id, bg_rp_id).take().value()};
 
 	for (size_t i = 0; i < 3; ++i) {
 		for (size_t j = 0; j < 3; ++j) {
-			render->setObjectPosition(scene_id, bg_ro_ids[i][j],
-									  i * 80.f - 80.f, j * 80.f - 80.f);
+			render_2d->setObjectPosition(scene_id, bg_ro_ids[i][j],
+										 i * 80.f - 80.f, j * 80.f - 80.f);
 		}
 	}
 
-	RenderCameraId camera_id = render->createCamera().take().value();
+	RenderCameraId camera_id = render_2d->createCamera().take().value();
 	float aspect = 600.f / 400.f;
 	float zoom = 10.f;
-	render->setCameraOrthographic(camera_id, -2.0f * aspect * zoom,
-								  2.0f * aspect * zoom, -2.0f * zoom,
-								  2.0f * zoom);
+	render_2d->setCameraOrthographic(camera_id, -2.0f * aspect * zoom,
+									 2.0f * aspect * zoom, -2.0f * zoom,
+									 2.0f * zoom);
+
+	RenderViewportId viewport_id = render->createViewport().take().value();
 
 	RenderStageId stage_id =
-		render->createStage(program_id, win_id, scene_id, camera_id)
+		render_2d
+			->createStage(program_id, viewport_id, win_id, scene_id, camera_id)
 			.take()
 			.value();
 
@@ -159,7 +172,7 @@ int main() {
 									  << arg.height << std::endl;
 							aspect = static_cast<float>(arg.width) /
 									 static_cast<float>(arg.height);
-							render->setCameraOrthographic(
+							render_2d->setCameraOrthographic(
 								camera_id, -2.0f * aspect * zoom,
 								2.0f * aspect * zoom, -2.0f * zoom,
 								2.0f * zoom);
@@ -236,20 +249,20 @@ int main() {
 		x += vx * fs.count();
 		y += vy * fs.count();
 
-		render->setCameraPosition(camera_id, x, y);
+		render_2d->setCameraPosition(camera_id, x, y);
 
 		int64_t ix = static_cast<int64_t>(x / 80.f);
 		int64_t iy = static_cast<int64_t>(y / 80.f);
 		for (size_t i = 0; i < 3; ++i) {
 			for (size_t j = 0; j < 3; ++j) {
-				render->setObjectPosition(
+				render_2d->setObjectPosition(
 					scene_id, bg_ro_ids[i][j],
 					(static_cast<int64_t>(i) + ix - 1) * 80.f,
 					(static_cast<int64_t>(j) + iy - 1) * 80.f);
 			}
 		}
 
-		render->setObjectPosition(scene_id, ro_id, x, y);
+		render_2d->setObjectPosition(scene_id, ro_id, x, y);
 
 		render->step(time);
 
@@ -259,9 +272,9 @@ int main() {
 	}
 
 	// Stuff gets cleaned up anyway
-	render->destroyScene(scene_id);
-	render->destroyMesh(mesh_id);
-	render->destroyProgram(program_id);
+	render_2d->destroyScene(scene_id);
+	render_2d->destroyMesh(mesh_id);
+	render_2d->destroyProgram(program_id);
 
 	return 0;
 }

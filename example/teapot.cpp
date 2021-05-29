@@ -29,10 +29,11 @@ int main() {
 		std::cerr << "No ogl33 renderer present" << std::endl;
 		return -1;
 	}
+	/*
 	RenderWindowId win_id = 0;
 
-	render->createWindow({600,400}, "Kelgin Setup Example").then([&render, &win_id](RenderWindowId id){
-		render->flush();
+	render->createWindow({600,400}, "Kelgin Setup Example").then([&render,
+	&win_id](RenderWindowId id){ render->flush();
 
 		render->setWindowVisibility(id, true).then([&render,id](){
 			render->setWindowDesiredFPS(id, 60.f).detach();
@@ -75,6 +76,7 @@ int main() {
 	}
 
 	render->destroyWindow(win_id);
+	*/
 
 	return 0;
 }

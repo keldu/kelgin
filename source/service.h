@@ -10,43 +10,39 @@ class Service {
 public:
 	virtual ~Service() = default;
 
-	virtual void run(AsyncIoContext& aio, WaitScope& wait_scope) = 0;
+	virtual void run(AsyncIoContext &aio, WaitScope &wait_scope) = 0;
 	virtual void stop() = 0;
 };
 
-template<typename T>
-class ServiceThread{
+template <typename T> class ServiceThread {
 private:
-	T& srv;
+	T &srv;
 	std::thread thread;
+
 public:
-	ServiceThread(T& srv);
+	ServiceThread(T &srv);
 	~ServiceThread();
 
 	void run();
 };
-}
+} // namespace gin
 
 // Template impl
 
 namespace gin {
-template<typename T>
-ServiceThread<T>::ServiceThread(T& srv):
-	srv{srv},
-	thread{std::bind(&ServiceThread<T>::run, this)}
-{}
+template <typename T>
+ServiceThread<T>::ServiceThread(T &srv)
+	: srv{srv}, thread{std::bind(&ServiceThread<T>::run, this)} {}
 
-template<typename T>
-ServiceThread<T>::~ServiceThread(){
+template <typename T> ServiceThread<T>::~ServiceThread() {
 	srv.stop();
-	if(thread.joinable()){
+	if (thread.joinable()) {
 		thread.join();
 	}
 }
 
-template<typename T>
-void ServiceThread<T>::run(){
+template <typename T> void ServiceThread<T>::run() {
 	// AsyncIoContext aio;
 	// srv.run(aio);
 }
-}
+} // namespace gin

@@ -140,6 +140,7 @@ public:
 	// Animation Operations
 	// virtual Conveyor<RenderAnimationId> createAnimation() noexcept = 0;
 	// virtual Conveyor<void> destroyAnimation(const RenderAnimationId&) noexcept = 0;
+	// virtual Conveyor<void> playAnimation(const RenderSceneId& id, const RenderObjectId& obj, const RenderAnimationId&) = 0;
 };
 
 class LowLevelRender3D {
