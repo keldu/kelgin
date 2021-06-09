@@ -431,36 +431,59 @@ Ogl33RenderTexture* Ogl33RenderTargetStorage::getRenderTexture(const RenderTextu
 	return nullptr;
 }
 
-RenderObjectId Ogl33Scene::createObject(const RenderPropertyId& rp_id){
+ErrorOr<RenderObjectId> Ogl33Scene::createObject(const RenderPropertyId& rp_id)noexcept{
 	RenderObjectId id = searchForFreeId(objects);
-	objects.insert(std::make_pair(id, RenderObject{rp_id, 0.f, 0.f, 0.f, 0.f, true}));
+
+	try{
+		objects.insert(std::make_pair(id, RenderObject{rp_id, 0.f, 0.f, 0.f, 0.f, true}));
+	}catch(const std::bad_alloc&){
+		return criticalError("Out of memory");
+	}
 	return id;
 }
 
-void Ogl33Scene::destroyObject(const RenderObjectId& id){
+void Ogl33Scene::destroyObject(const RenderObjectId& id)noexcept{
 	objects.erase(id);
 }
 
-void Ogl33Scene::setObjectPosition(const RenderObjectId& id, float x, float y){
+Error Ogl33Scene::setObjectPosition(const RenderObjectId& id, float x, float y)noexcept{
 	auto find = objects.find(id);
-	if(find != objects.end()){
-		find->second.x = x;
-		find->second.y = y;
+	if(find == objects.end()){
+		return criticalError("Couldn't find object");
 	}
+
+	find->second.x = x;
+	find->second.y = y;
+	return noError();
 }
 
-void Ogl33Scene::setObjectRotation(const RenderObjectId& id, float angle){
+Error Ogl33Scene::setObjectRotation(const RenderObjectId& id, float angle)noexcept{
 	auto find = objects.find(id);
-	if(find != objects.end()){
-		find->second.angle = angle;
+	if(find == objects.end()){
+		return criticalError("Couldn't find object");
 	}
+	find->second.angle = angle;
+	return noError();
 }
 
-void Ogl33Scene::setObjectVisibility(const RenderObjectId& id, bool visible){
+Error Ogl33Scene::setObjectVisibility(const RenderObjectId& id, bool visible)noexcept{
 	auto find = objects.find(id);
-	if(find != objects.end()){
-		find->second.visible = visible;
+	if(find == objects.end()){
+		return criticalError("Couldn't find object");
 	}
+	
+	find->second.visible = visible;
+	return noError();
+}
+
+Error Ogl33Scene::setObjectLayer(const RenderObjectId& id, float l) noexcept {
+	auto find = objects.find(id);
+	if(find == objects.end()){
+		return criticalError("Couldn't find object");
+	}
+
+	find->second.layer = l;
+	return noError();
 }
 
 /**
@@ -528,6 +551,7 @@ Error Ogl33Scene3d::setObjectVisibility(const RenderObject3dId& id, bool visible
 
 	return noError();
 }
+
 
 
 void Ogl33RenderStage::renderOne(Ogl33Program& program, Ogl33RenderProperty& property, Ogl33Scene::RenderObject& object, Ogl33Mesh& mesh, Ogl33Texture& texture, Matrix<float, 3, 3>& vp){
@@ -1234,11 +1258,13 @@ Conveyor<RenderSceneId> Ogl33Render::createScene() noexcept {
 Conveyor<RenderObjectId> Ogl33Render::createObject(const RenderSceneId& scene, const RenderPropertyId& prop) noexcept {
 	auto find = scenes.find(scene);
 	if(find != scenes.end()){
-		RenderObjectId id = find->second.createObject(prop);
-		if(id == 0){
-			return Conveyor<RenderObjectId>{criticalError("Couldn't create RenderObject")};
+		ErrorOr<RenderObjectId> error_id = find->second.createObject(prop);
+		if(error_id.isError()){
+			return Conveyor<RenderObjectId>{error_id.error().copyError()};
+		}else if(error_id.isValue()){
+			return error_id.value();
 		}else {
-			return id;
+			return Conveyor<RenderObjectId>{criticalError("ErrorOr object isn't set properly")};
 		}
 	}else{
 		return Conveyor<RenderObjectId>{criticalError("Couldn't find scene")};
@@ -1280,6 +1306,17 @@ Conveyor<void> Ogl33Render::setObjectVisibility(const RenderSceneId& scene, cons
 	auto find = scenes.find(scene);
 	if(find != scenes.end()){
 		find->second.setObjectVisibility(obj, visible);
+		/// @todo
+		/// Technically not noError
+		return Conveyor<void>{Void{}};
+	}
+	return Conveyor<void>{criticalError("Couldn't find scene")};
+}
+
+Conveyor<void> Ogl33Render::setObjectLayer(const RenderSceneId& scene, const RenderObjectId& obj, float layer) noexcept {
+	auto find = scenes.find(scene);
+	if(find != scenes.end()){
+		find->second.setObjectLayer(obj, layer);
 		/// @todo
 		/// Technically not noError
 		return Conveyor<void>{Void{}};
@@ -1530,7 +1567,7 @@ void Ogl33Render::updateTime(const std::chrono::steady_clock::time_point& ) noex
 }
 }
 
-extern "C" gin::LowLevelRender* createRenderer(gin::AsyncIoProvider& io_provider){
+extern "C" gin::LowLevelRender* createRenderer(gin::IoProvider& io_provider){
 	gin::Own<gin::GlContext> context = gin::createGlContext(io_provider, gin::GlSettings{});
 	if(!context){
 		return nullptr;

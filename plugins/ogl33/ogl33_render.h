@@ -274,11 +274,12 @@ private:
 	std::unordered_map<RenderObjectId, RenderObject> objects;
 public:
 
-	RenderObjectId createObject(const RenderPropertyId&);
-	void destroyObject(const RenderObjectId&);
-	void setObjectPosition(const RenderObjectId&, float, float);
-	void setObjectRotation(const RenderObjectId&, float);
-	void setObjectVisibility(const RenderObjectId&, bool);
+	ErrorOr<RenderObjectId> createObject(const RenderPropertyId& id) noexcept;
+	void destroyObject(const RenderObjectId& id) noexcept;
+	Error setObjectPosition(const RenderObjectId& id, float x, float y) noexcept;
+	Error setObjectRotation(const RenderObjectId& id, float a) noexcept;
+	Error setObjectVisibility(const RenderObjectId& id, bool v) noexcept;
+	Error setObjectLayer(const RenderObjectId& id, float l) noexcept;
 
 	void visit(const Ogl33Camera&, std::vector<RenderObject*>&);
 };
@@ -442,6 +443,7 @@ public:
 	Conveyor<void> setObjectPosition(const RenderSceneId&, const RenderObjectId&, float, float) noexcept override;
 	Conveyor<void> setObjectRotation(const RenderSceneId&, const RenderObjectId&, float) noexcept override;
 	Conveyor<void> setObjectVisibility(const RenderSceneId&, const RenderObjectId&, bool) noexcept override;
+	Conveyor<void> setObjectLayer(const RenderSceneId& id, const RenderObjectId&, float) noexcept override;
 	Conveyor<void> destroyObject(const RenderSceneId&, const RenderObjectId&) noexcept override;
 	Conveyor<void> destroyScene(const RenderSceneId&) noexcept override;
 

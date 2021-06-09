@@ -23,7 +23,7 @@ public:
 	virtual ~RenderProvider() = default;
 
 	/// @todo build interface, because plugins aren't always available
-	virtual LowLevelRender *getRenderer(AsyncIoProvider &provider,
+	virtual LowLevelRender *getRenderer(IoProvider &provider,
 										const std::string &name) = 0;
 };
 
@@ -32,14 +32,14 @@ public:
 	struct Plugin {
 	public:
 		Plugin(DynamicLibrary &&,
-			   std::function<LowLevelRender *(AsyncIoProvider &)> &&,
+			   std::function<LowLevelRender *(IoProvider &)> &&,
 			   std::function<void(LowLevelRender *)> &&);
 
 		Plugin(Plugin &&) = default;
 		Plugin &operator=(Plugin &&) = default;
 
 		DynamicLibrary handle;
-		std::function<LowLevelRender *(AsyncIoProvider &)> create_render;
+		std::function<LowLevelRender *(IoProvider &)> create_render;
 		std::function<void(LowLevelRender *)> destroy_render;
 	};
 
@@ -80,7 +80,7 @@ public:
 	 * extension
 	 */
 
-	LowLevelRender *getRenderer(AsyncIoProvider &provider,
+	LowLevelRender *getRenderer(IoProvider &provider,
 								const std::string &name) override;
 };
 
@@ -106,7 +106,7 @@ public:
 	 * @param name search for the plugin by using the filename part without the
 	 * extension
 	 */
-	LowLevelRender *getRenderer(AsyncIoProvider &provider,
+	LowLevelRender *getRenderer(IoProvider &provider,
 								const std::string &name);
 };
 

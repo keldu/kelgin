@@ -131,6 +131,7 @@ public:
 	virtual Conveyor<void> setObjectPosition(const RenderSceneId&, const RenderObjectId&, float, float) noexcept = 0;
 	virtual Conveyor<void> setObjectRotation(const RenderSceneId&, const RenderObjectId&, float) noexcept = 0;
 	virtual Conveyor<void> setObjectVisibility(const RenderSceneId&, const RenderObjectId&, bool) noexcept = 0;
+	virtual Conveyor<void> setObjectLayer(const RenderSceneId& id, const RenderObjectId&, float) noexcept = 0;
 	virtual Conveyor<void> destroyScene(const RenderSceneId&) noexcept = 0;
 
 	// Stage Operations
@@ -219,6 +220,6 @@ public:
 * This is meant for plugins
 */
 extern "C" {
-gin::LowLevelRender* createRenderer(gin::AsyncIoProvider& io_provider);
+gin::LowLevelRender* createRenderer(gin::IoProvider& io_provider);
 void destroyRenderer(gin::LowLevelRender* render);
 }

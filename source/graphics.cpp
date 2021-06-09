@@ -10,7 +10,7 @@
 namespace gin {
 RenderPlugins::Plugin::Plugin(
 	DynamicLibrary &&dl,
-	std::function<LowLevelRender *(AsyncIoProvider &)> &&cr,
+	std::function<LowLevelRender *(IoProvider &)> &&cr,
 	std::function<void(LowLevelRender *)> &&dr)
 	: handle{std::move(dl)}, create_render{std::move(cr)}, destroy_render{
 															   std::move(dr)} {}
@@ -29,7 +29,7 @@ RenderPlugins::~RenderPlugins() {
 	}
 }
 
-LowLevelRender *RenderPlugins::getRenderer(AsyncIoProvider &provider,
+LowLevelRender *RenderPlugins::getRenderer(IoProvider &provider,
 										   const std::string &name) {
 	auto find = render_plugins.find(name);
 	if (find != render_plugins.end()) {
@@ -68,8 +68,8 @@ Own<RenderProvider> loadAllRenderPluginsIn(const std::filesystem::path &dir) {
 			continue;
 		}
 
-		std::function<LowLevelRender *(AsyncIoProvider &)> create_render =
-			reinterpret_cast<LowLevelRender *(*)(AsyncIoProvider &)>(
+		std::function<LowLevelRender *(IoProvider &)> create_render =
+			reinterpret_cast<LowLevelRender *(*)(IoProvider &)>(
 				lib.value().symbol("createRenderer"));
 		assert(create_render);
 		if (!create_render) {
@@ -115,7 +115,7 @@ Graphics::Graphics(Own<RenderProvider> &&rp) : render_provider{std::move(rp)} {}
 
 Graphics::~Graphics() {}
 
-LowLevelRender *Graphics::getRenderer(AsyncIoProvider &provider,
+LowLevelRender *Graphics::getRenderer(IoProvider &provider,
 									  const std::string &name) {
 	assert(render_provider);
 	if (!render_provider) {
