@@ -230,44 +230,51 @@ int main() {
 	render->flush();
 
 	auto old_time = std::chrono::steady_clock::now();
+	auto next_phys_time = old_time;
+
+	float phys_time_delta = 1.f / 30.f;
+
 	while (running) {
 		auto time = std::chrono::steady_clock::now();
 
-		std::chrono::duration<float> fs = time - old_time;
+		if( time >= next_phys_time ){
+			next_phys_time += std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::duration<float>{phys_time_delta});
+			render->updateTime(time, next_phys_time + std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::duration<float>{phys_time_delta}));
 
-		if (y <= 1e-5f) {
-			float friction = 9.81 * ((0.f < vx) - (vx < 0.f)) * fs.count();
-			if (std::abs(vx) < std::abs(friction)) {
-				vx -= 0.f;
-			} else {
-				vx -= friction;
+			if (y <= 1e-5f) {
+				float friction = 9.81 * ((0.f < vx) - (vx < 0.f)) * phys_time_delta;
+				if (std::abs(vx) < std::abs(friction)) {
+					vx -= 0.f;
+				} else {
+					vx -= friction;
+				}
 			}
-		}
-		vx = dx * 15.f;
-		vy = dy * 15.f;
+			vx = dx * 15.f;
+			vy = dy * 15.f;
 
-		x += vx * fs.count();
-		y += vy * fs.count();
+			x += vx * phys_time_delta;
+			y += vy * phys_time_delta;
 
-		render_2d->setCameraPosition(camera_id, x, y);
+			render_2d->setCameraPosition(camera_id, x, y);
 
-		int64_t ix = static_cast<int64_t>(x / 80.f);
-		int64_t iy = static_cast<int64_t>(y / 80.f);
-		for (size_t i = 0; i < 3; ++i) {
-			for (size_t j = 0; j < 3; ++j) {
-				render_2d->setObjectPosition(
-					scene_id, bg_ro_ids[i][j],
-					(static_cast<int64_t>(i) + ix - 1) * 80.f,
-					(static_cast<int64_t>(j) + iy - 1) * 80.f);
+			int64_t ix = static_cast<int64_t>(x / 80.f);
+			int64_t iy = static_cast<int64_t>(y / 80.f);
+			for (size_t i = 0; i < 3; ++i) {
+				for (size_t j = 0; j < 3; ++j) {
+					render_2d->setObjectPosition(
+						scene_id, bg_ro_ids[i][j],
+						(static_cast<int64_t>(i) + ix - 1) * 80.f,
+						(static_cast<int64_t>(j) + iy - 1) * 80.f);
+				}
 			}
-		}
 
-		render_2d->setObjectPosition(scene_id, ro_id, x, y);
+			render_2d->setObjectPosition(scene_id, ro_id, x, y);
+		}
 
 		render->step(time);
 
 		render->flush();
-		wait_scope.wait(std::chrono::milliseconds{5});
+		wait_scope.wait(std::chrono::milliseconds{1});
 		old_time = time;
 	}
 

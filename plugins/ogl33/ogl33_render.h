@@ -27,16 +27,23 @@ class Ogl33RenderObject;
 class Ogl33Camera {
 private:
 	Matrix<float, 3, 3> projection_matrix;
-	Matrix<float, 3, 3> view_matrix;
+
+	std::array<float, 2> position = {{0.f, 0.f}};
+	float angle = 0.f;
+
+	std::array<float, 2> old_position = {{0.f, 0.f}};
+	float old_angle = 0.f;
 public:
 	Ogl33Camera();
 
 	void setViewPosition(float x, float y);
 	void setViewRotation(float angle);
 
+	void updateState(float relative_tp);
+
 	void setOrtho(float left, float right, float top, float bot);
 
-	const Matrix<float, 3,3>& view() const;
+	Matrix<float, 3,3> view(float relative_tp) const;
 	const Matrix<float, 3,3>& projection() const;
 };
 
@@ -264,9 +271,13 @@ class Ogl33Scene {
 public:
 	struct RenderObject {
 		RenderPropertyId id = 0;
-		float x = 0.f;
-		float y = 0.f;
+
+		std::array<float,2> pos{{0.f, 0.f}};
 		float angle = 0.f;
+
+		std::array<float,2> old_pos{{0.f, 0.f}};
+		float old_angle = 0.f;
+
 		float layer = 0.f;
 		bool visible = true;
 	};
@@ -282,22 +293,24 @@ public:
 	Error setObjectLayer(const RenderObjectId& id, float l) noexcept;
 
 	void visit(const Ogl33Camera&, std::vector<RenderObject*>&);
+
+	void updateState(float interval);
 };
 
 class Ogl33Scene3d {
 public:
 	struct RenderObject {
 		RenderProperty3dId id = 0;
-		float x = 0.f;
-		float y = 0.f;
-		float z = 0.f;
-		float alpha = 0.f;
-		float beta = 0.f;
-		float gamma = 0.f;
+
+		std::array<float, 3> pos{{0.f, 0.f, 0.f}};
+		std::array<float, 3> rot{{0.f, 0.f, 0.f}};
+
+		std::array<float, 3> old_pos{{0.f, 0.f, 0.f}};
+		std::array<float, 3> old_rot{{0.f, 0.f, 0.f}};
+
 		bool visible = true;
 
-		RenderObject(const RenderProperty3dId& p_id):id{p_id},x{0.f},y{0.f},z{0.f},alpha{0.f},
-		beta{0.f},gamma{0.f},visible{true}{}
+		RenderObject(const RenderProperty3dId& p_id):id{p_id}{}
 	};
 private:
 	std::unordered_map<RenderObject3dId, RenderObject> objects;
@@ -311,11 +324,13 @@ public:
 	Error setObjectVisibility(const RenderObject3dId&, bool) noexcept;
 
 	void visit(const Ogl33Camera3d&, std::vector<RenderObject>&);
+
+	void updateState();
 };
 
 class Ogl33RenderStage {
 private:
-	void renderOne(Ogl33Program& program, Ogl33RenderProperty& property, Ogl33Scene::RenderObject& object, Ogl33Mesh& mesh, Ogl33Texture&, Matrix<float, 3, 3>& vp);
+	void renderOne(Ogl33Program& program, Ogl33RenderProperty& property, Ogl33Scene::RenderObject& object, Ogl33Mesh& mesh, Ogl33Texture&, Matrix<float, 3, 3>& vp, float time_interval);
 public:
 	RenderTargetId target_id;
 	RenderViewportId viewport_id;
@@ -323,7 +338,7 @@ public:
 	RenderCameraId camera_id;
 	ProgramId program_id;
 
-	void render(Ogl33Render& render);
+	void render(Ogl33Render& render, float time_interval);
 };
 
 class Ogl33RenderStage3d {
@@ -382,6 +397,9 @@ private:
 	void stepRenderTargetTimes(const std::chrono::steady_clock::time_point&);
 
 	std::queue<RenderTargetId> render_target_draw_tasks;
+
+	std::chrono::steady_clock::time_point old_time_point;
+	std::chrono::steady_clock::time_point time_point;
 public:
 	Ogl33Render(Own<GlContext>&&);
 	~Ogl33Render();
@@ -475,6 +493,6 @@ public:
 	void step(const std::chrono::steady_clock::time_point&) noexcept override;
 	void flush() noexcept override;
 
-	void updateTime(const std::chrono::steady_clock::time_point& ) noexcept override;
+	void updateTime(const std::chrono::steady_clock::time_point& new_old_time_point, const std::chrono::steady_clock::time_point& new_time_point) noexcept override;
 };
 }

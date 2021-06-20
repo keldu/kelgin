@@ -26,7 +26,6 @@ Ogl33Camera::Ogl33Camera()
 {
 	for(size_t i = 0; i < 3; ++i){
 		projection_matrix(i,i) = 1.0f;
-		view_matrix(i,i) = 1.0f;
 	}
 }
 
@@ -44,19 +43,40 @@ void Ogl33Camera::setOrtho(float left, float right, float bottom, float top){
 	projection_matrix(2,2) = 1.0f;
 }
 
+void Ogl33Camera::updateState(float relative_tp){
+	old_position[0] = position[0] * relative_tp + old_position[0] * ( 1.f - relative_tp);
+	old_position[1] = position[1] * relative_tp + old_position[1] * ( 1.f - relative_tp);
+	old_angle = angle * relative_tp + old_angle * ( 1.f - relative_tp );
+}
+
 void Ogl33Camera::setViewPosition(float x, float y){
-	view_matrix(0, 2) = -x;
-	view_matrix(1, 2) = -y;
+	position[0] = x;
+	position[1] = y;
 }
 
 void Ogl33Camera::setViewRotation(float angle){
-	view_matrix(0,0) = cos(angle);
-	view_matrix(0,1) = sin(angle);
-	view_matrix(1,0) = -sin(angle);
-	view_matrix(1,1) = cos(angle);
+	this->angle = angle;
 }
 
-const Matrix<float, 3,3>& Ogl33Camera::view() const {
+Matrix<float, 3,3> Ogl33Camera::view(float interpol) const {
+	Matrix<float, 3, 3> view_matrix;
+
+	view_matrix(0,2) = - (interpol * position[0] + (1.f - interpol) * old_position[0]);
+	view_matrix(1,2) = - (interpol * position[1] + (1.f - interpol) * old_position[1]);
+
+	float interpol_angle = interpol * angle + ( 1.f - interpol ) * old_angle;
+	float cos_angle = cos(interpol_angle);
+	float sin_angle = sin(interpol_angle);
+
+	view_matrix(0,0) = cos_angle;
+	view_matrix(0,1) = sin_angle;
+	view_matrix(1,0) = -sin_angle;
+	view_matrix(1,1) = cos_angle;
+
+	view_matrix(2,2) = 1.f;
+	view_matrix(2,0) = 0.f;
+	view_matrix(2,1) = 0.f;
+
 	return view_matrix;
 }
 
@@ -452,8 +472,8 @@ Error Ogl33Scene::setObjectPosition(const RenderObjectId& id, float x, float y)n
 		return criticalError("Couldn't find object");
 	}
 
-	find->second.x = x;
-	find->second.y = y;
+	find->second.pos = {{x,y}};
+
 	return noError();
 }
 
@@ -498,6 +518,14 @@ void Ogl33Scene::visit(const Ogl33Camera&, std::vector<RenderObject*>& render_qu
 	}
 }
 
+void Ogl33Scene::updateState(float interval){
+	for(auto& iter : objects){
+		iter.second.old_pos[0] = iter.second.pos[0] * interval + iter.second.old_pos[0] * (1.f - interval);
+		iter.second.old_pos[1] = iter.second.pos[1] * interval + iter.second.old_pos[1] * (1.f - interval);
+		iter.second.old_angle = iter.second.angle * interval + iter.second.old_angle * (1.f - interval);
+	}
+}
+
 ErrorOr<RenderObject3dId> Ogl33Scene3d::createObject(const RenderProperty3dId& id) noexcept {
 	RenderObject3dId o_id = searchForFreeId(objects);
 
@@ -521,9 +549,7 @@ Error Ogl33Scene3d::setObjectPosition(const RenderObject3dId& id, float x, float
 		return criticalError("Couldn't find object");
 	}
 
-	find->second.x = x;
-	find->second.y = y;
-	find->second.z = z;
+	find->second.pos = {{x,y,z}};
 
 	return noError();
 }
@@ -534,9 +560,7 @@ Error Ogl33Scene3d::setObjectRotation(const RenderObject3dId& id, float a, float
 		return criticalError("Couldn't find object");
 	}
 
-	find->second.alpha = a;
-	find->second.beta = b;
-	find->second.gamma = g;
+	find->second.rot = {{a,b,g}};
 
 	return noError();
 }
@@ -552,21 +576,29 @@ Error Ogl33Scene3d::setObjectVisibility(const RenderObject3dId& id, bool visible
 	return noError();
 }
 
+void Ogl33Scene3d::updateState(){
+	for(auto& iter : objects){
+		iter.second.old_pos = iter.second.pos;
+		iter.second.old_rot = iter.second.rot;
+	}
+}
 
-
-void Ogl33RenderStage::renderOne(Ogl33Program& program, Ogl33RenderProperty& property, Ogl33Scene::RenderObject& object, Ogl33Mesh& mesh, Ogl33Texture& texture, Matrix<float, 3, 3>& vp){
+void Ogl33RenderStage::renderOne(Ogl33Program& program, Ogl33RenderProperty& property, Ogl33Scene::RenderObject& object, Ogl33Mesh& mesh, Ogl33Texture& texture, Matrix<float, 3, 3>& vp, float time_interval){
 	program.setMesh(mesh);
 	program.setTexture(texture);
 	program.setLayer(object.layer);
 	Matrix<float, 3, 3> mvp;
-	float cos_a = cos(object.angle);
-	float sin_a = sin(object.angle);
+
+	float interpolated_angle = object.angle * time_interval + object.old_angle * ( 1.f - time_interval );
+
+	float cos_a = cos(interpolated_angle);
+	float sin_a = sin(interpolated_angle);
 	mvp(0,0) = cos_a;
 	mvp(1,1) = cos_a;
 	mvp(0,1) = -sin_a;
 	mvp(1,0) = sin_a;
-	mvp(0,2) = object.x;
-	mvp(1,2) = object.y;
+	mvp(0,2) = object.pos[0] * ( time_interval ) + object.old_pos[0] * ( 1.f - time_interval );
+	mvp(1,2) = object.pos[1] * ( time_interval ) + object.old_pos[1] * ( 1.f - time_interval );
 	mvp(2,2) = 1.f;
 
 	mvp = vp * mvp;
@@ -576,7 +608,7 @@ void Ogl33RenderStage::renderOne(Ogl33Program& program, Ogl33RenderProperty& pro
 	glDrawElements(GL_TRIANGLES, mesh.indexCount(), GL_UNSIGNED_INT, 0L);
 }
 
-void Ogl33RenderStage::render(Ogl33Render& render){
+void Ogl33RenderStage::render(Ogl33Render& render, float time_interval){
 	std::vector<Ogl33Scene::RenderObject*> draw_queue;
 
 	Ogl33Scene* scene = render.getScene(scene_id);
@@ -599,7 +631,7 @@ void Ogl33RenderStage::render(Ogl33Render& render){
 
 	program->use();
 
-	Matrix<float, 3, 3> vp = camera->projection()*camera->view();
+	Matrix<float, 3, 3> vp = camera->projection()*camera->view(time_interval);
 
 	for(auto& iter : draw_queue){
 		Ogl33RenderProperty* property = render.getProperty(iter->id);
@@ -618,7 +650,7 @@ void Ogl33RenderStage::render(Ogl33Render& render){
 			continue;
 		}
 		
-		renderOne(*program, *property, *iter, *mesh, *texture, vp);		
+		renderOne(*program, *property, *iter, *mesh, *texture, vp, time_interval);		
 	}
 }
 
@@ -658,7 +690,9 @@ void Ogl33RenderStage3d::render(Ogl33Render& render){
 }
 
 Ogl33Render::Ogl33Render(Own<GlContext>&& ctx):
-	context{std::move(ctx)}
+	context{std::move(ctx)},
+	old_time_point{std::chrono::steady_clock::now()},
+	time_point{old_time_point}
 {
 }
 
@@ -1535,6 +1569,13 @@ void Ogl33Render::step(const std::chrono::steady_clock::time_point& tp) noexcept
 		return;
 	}
 
+	std::chrono::duration<float> range = time_point - old_time_point;
+	std::chrono::duration<float> interval = tp - old_time_point;
+
+	float relative_tp = std::max(0.f, std::min(1.0f, interval.count() / range.count()));
+
+	std::cout<<"Time: "<<relative_tp<<" "<<interval.count() / range.count()<<std::endl;
+
 	stepRenderTargetTimes(tp);
 
 
@@ -1554,7 +1595,7 @@ void Ogl33Render::step(const std::chrono::steady_clock::time_point& tp) noexcept
 		for(auto iter = range.first; iter != range.second; ++iter){
 			auto stage_iter = render_stages.find(iter->second);
 			if(stage_iter != render_stages.end()){
-				stage_iter->second.render(*this);
+				stage_iter->second.render(*this, relative_tp);
 			}
 		}
 
@@ -1562,8 +1603,23 @@ void Ogl33Render::step(const std::chrono::steady_clock::time_point& tp) noexcept
 	}
 }
 
-void Ogl33Render::updateTime(const std::chrono::steady_clock::time_point& ) noexcept {
-	/// @todo implement interpolation
+void Ogl33Render::updateTime(const std::chrono::steady_clock::time_point& new_old_time_point, const std::chrono::steady_clock::time_point& new_time_point) noexcept {
+
+	std::chrono::duration<float> range = time_point - old_time_point;
+	std::chrono::duration<float> interval = new_old_time_point - old_time_point;
+
+	float relative_tp = std::max(0.f, std::min(1.0f, interval.count() / range.count()));
+
+	for(auto& iter : scenes){
+		iter.second.updateState(relative_tp);
+	}
+
+	for(auto& iter : cameras){
+		iter.second.updateState(relative_tp);
+	}
+
+	old_time_point = new_old_time_point;
+	time_point = new_time_point;
 }
 }
 
@@ -1572,13 +1628,6 @@ extern "C" gin::LowLevelRender* createRenderer(gin::IoProvider& io_provider){
 	if(!context){
 		return nullptr;
 	}
-	
-	/*
-	if(!gladLoadGL()){
-		std::cout<<"Failed to load glad"<<std::endl;
-		return nullptr;
-	}
-	*/
 
 	std::cout<<"Creating ogl33 plugin"<<std::endl;
 	return new gin::Ogl33Render(std::move(context));

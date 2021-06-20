@@ -211,7 +211,7 @@ public:
 	virtual void step(const std::chrono::steady_clock::time_point&) noexcept = 0;
 	virtual void flush() noexcept = 0;
 
-	virtual void updateTime(const std::chrono::steady_clock::time_point&) noexcept = 0;
+	virtual void updateTime(const std::chrono::steady_clock::time_point& new_old_time_point, const std::chrono::steady_clock::time_point& new_time_point) noexcept = 0;
 };
 }
 
