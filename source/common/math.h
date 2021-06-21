@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <complex>
 
 namespace gin {
 template <typename T, size_t M, size_t N>
@@ -110,4 +111,10 @@ public:
 		return matrix;
 	}
 };
+
+template<typename T>
+static std::complex<T> slerp2D(const std::complex<T>& from, const std::complex<T>& to, T frac){
+
+	return std::pow(to * std::conj<T>(from), frac) * from;
+}
 }

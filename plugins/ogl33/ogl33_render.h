@@ -9,6 +9,7 @@
 #include <map>
 #include <set>
 #include <cassert>
+#include <complex>
 
 #include <iostream>
 
@@ -29,10 +30,10 @@ private:
 	Matrix<float, 3, 3> projection_matrix;
 
 	std::array<float, 2> position = {{0.f, 0.f}};
-	float angle = 0.f;
+	std::complex<float> angle = std::polar(1.f, 0.f);
 
 	std::array<float, 2> old_position = {{0.f, 0.f}};
-	float old_angle = 0.f;
+	std::complex<float> old_angle = std::polar(1.f, 0.f);
 public:
 	Ogl33Camera();
 
@@ -273,10 +274,10 @@ public:
 		RenderPropertyId id = 0;
 
 		std::array<float,2> pos{{0.f, 0.f}};
-		float angle = 0.f;
+		std::complex<float> angle = std::polar(1.f, 0.f);
 
 		std::array<float,2> old_pos{{0.f, 0.f}};
-		float old_angle = 0.f;
+		std::complex<float> old_angle = std::polar(1.f, 0.f);
 
 		float layer = 0.f;
 		bool visible = true;

@@ -46,7 +46,8 @@ void Ogl33Camera::setOrtho(float left, float right, float bottom, float top){
 void Ogl33Camera::updateState(float relative_tp){
 	old_position[0] = position[0] * relative_tp + old_position[0] * ( 1.f - relative_tp);
 	old_position[1] = position[1] * relative_tp + old_position[1] * ( 1.f - relative_tp);
-	old_angle = angle * relative_tp + old_angle * ( 1.f - relative_tp );
+
+	old_angle = slerp2D( old_angle, angle, relative_tp );
 }
 
 void Ogl33Camera::setViewPosition(float x, float y){
@@ -64,14 +65,12 @@ Matrix<float, 3,3> Ogl33Camera::view(float interpol) const {
 	view_matrix(0,2) = - (interpol * position[0] + (1.f - interpol) * old_position[0]);
 	view_matrix(1,2) = - (interpol * position[1] + (1.f - interpol) * old_position[1]);
 
-	float interpol_angle = interpol * angle + ( 1.f - interpol ) * old_angle;
-	float cos_angle = cos(interpol_angle);
-	float sin_angle = sin(interpol_angle);
+	std::complex<float> interpol_angle = slerp2D<float>(old_angle, angle, interpol);
 
-	view_matrix(0,0) = cos_angle;
-	view_matrix(0,1) = sin_angle;
-	view_matrix(1,0) = -sin_angle;
-	view_matrix(1,1) = cos_angle;
+	view_matrix(0,0) = std::real(interpol_angle);
+	view_matrix(0,1) = std::imag(interpol_angle);
+	view_matrix(1,0) = -std::imag(interpol_angle);
+	view_matrix(1,1) = std::real(interpol_angle);
 
 	view_matrix(2,2) = 1.f;
 	view_matrix(2,0) = 0.f;
@@ -455,7 +454,7 @@ ErrorOr<RenderObjectId> Ogl33Scene::createObject(const RenderPropertyId& rp_id)n
 	RenderObjectId id = searchForFreeId(objects);
 
 	try{
-		objects.insert(std::make_pair(id, RenderObject{rp_id, 0.f, 0.f, 0.f, 0.f, true}));
+		objects.insert(std::make_pair(id, RenderObject{rp_id}));
 	}catch(const std::bad_alloc&){
 		return criticalError("Out of memory");
 	}
@@ -482,7 +481,7 @@ Error Ogl33Scene::setObjectRotation(const RenderObjectId& id, float angle)noexce
 	if(find == objects.end()){
 		return criticalError("Couldn't find object");
 	}
-	find->second.angle = angle;
+	find->second.angle = std::polar(1.f, angle);
 	return noError();
 }
 
@@ -522,7 +521,8 @@ void Ogl33Scene::updateState(float interval){
 	for(auto& iter : objects){
 		iter.second.old_pos[0] = iter.second.pos[0] * interval + iter.second.old_pos[0] * (1.f - interval);
 		iter.second.old_pos[1] = iter.second.pos[1] * interval + iter.second.old_pos[1] * (1.f - interval);
-		iter.second.old_angle = iter.second.angle * interval + iter.second.old_angle * (1.f - interval);
+
+		iter.second.old_angle = slerp2D<float>(iter.second.old_angle, iter.second.angle, interval);
 	}
 }
 
@@ -589,14 +589,13 @@ void Ogl33RenderStage::renderOne(Ogl33Program& program, Ogl33RenderProperty& pro
 	program.setLayer(object.layer);
 	Matrix<float, 3, 3> mvp;
 
-	float interpolated_angle = object.angle * time_interval + object.old_angle * ( 1.f - time_interval );
+	std::complex<float> interpol_angle = slerp2D<float>(object.old_angle, object.angle, time_interval);
 
-	float cos_a = cos(interpolated_angle);
-	float sin_a = sin(interpolated_angle);
-	mvp(0,0) = cos_a;
-	mvp(1,1) = cos_a;
-	mvp(0,1) = -sin_a;
-	mvp(1,0) = sin_a;
+	mvp(0,0) = std::real(interpol_angle);
+	mvp(0,1) = -std::imag(interpol_angle);
+	mvp(1,0) = std::imag(interpol_angle);
+	mvp(1,1) = std::real(interpol_angle);
+
 	mvp(0,2) = object.pos[0] * ( time_interval ) + object.old_pos[0] * ( 1.f - time_interval );
 	mvp(1,2) = object.pos[1] * ( time_interval ) + object.old_pos[1] * ( 1.f - time_interval );
 	mvp(2,2) = 1.f;
