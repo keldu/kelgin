@@ -1208,9 +1208,9 @@ static stbi__uint16 *stbi__convert_8_to_16(stbi_uc *orig, int w, int h,
 		return (stbi__uint16 *)stbi__errpuc("outofmem", "Out of memory");
 
 	for (i = 0; i < img_len; ++i)
-		enlarged[i] = (stbi__uint16)(
-			(orig[i] << 8) +
-			orig[i]); // replicate to high and low byte, maps 0->0, 255->0xffff
+		enlarged[i] = (stbi__uint16)((orig[i] << 8) +
+									 orig[i]); // replicate to high and low
+											   // byte, maps 0->0, 255->0xffff
 
 	STBI_FREE(orig);
 	return enlarged;
@@ -3373,8 +3373,9 @@ static int stbi__process_marker(stbi__jpeg *z, int m) {
 				return stbi__err("bad DQT table", "Corrupt JPEG");
 
 			for (i = 0; i < 64; ++i)
-				z->dequant[t][stbi__jpeg_dezigzag[i]] = (stbi__uint16)(
-					sixteen ? stbi__get16be(z->s) : stbi__get8(z->s));
+				z->dequant[t][stbi__jpeg_dezigzag[i]] =
+					(stbi__uint16)(sixteen ? stbi__get16be(z->s)
+										   : stbi__get8(z->s));
 			L -= (sixteen ? 129 : 65);
 		}
 		return L == 0;

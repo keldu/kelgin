@@ -48,6 +48,7 @@ void Ogl33Camera::updateState(float relative_tp){
 	old_position[1] = position[1] * relative_tp + old_position[1] * ( 1.f - relative_tp);
 
 	old_angle = slerp2D( old_angle, angle, relative_tp );
+	old_angle /= std::abs(old_angle);
 }
 
 void Ogl33Camera::setViewPosition(float x, float y){
@@ -56,7 +57,7 @@ void Ogl33Camera::setViewPosition(float x, float y){
 }
 
 void Ogl33Camera::setViewRotation(float angle){
-	this->angle = angle;
+	this->angle = std::polar(1.f, angle);
 }
 
 Matrix<float, 3,3> Ogl33Camera::view(float interpol) const {
@@ -465,7 +466,7 @@ void Ogl33Scene::destroyObject(const RenderObjectId& id)noexcept{
 	objects.erase(id);
 }
 
-Error Ogl33Scene::setObjectPosition(const RenderObjectId& id, float x, float y)noexcept{
+Error Ogl33Scene::setObjectPosition(const RenderObjectId& id, float x, float y, bool interpolate )noexcept{
 	auto find = objects.find(id);
 	if(find == objects.end()){
 		return criticalError("Couldn't find object");
@@ -473,15 +474,24 @@ Error Ogl33Scene::setObjectPosition(const RenderObjectId& id, float x, float y)n
 
 	find->second.pos = {{x,y}};
 
+	if(!interpolate){
+		find->second.old_pos = find->second.pos;
+	}
+
 	return noError();
 }
 
-Error Ogl33Scene::setObjectRotation(const RenderObjectId& id, float angle)noexcept{
+Error Ogl33Scene::setObjectRotation(const RenderObjectId& id, float angle, bool interpolate)noexcept{
 	auto find = objects.find(id);
 	if(find == objects.end()){
 		return criticalError("Couldn't find object");
 	}
 	find->second.angle = std::polar(1.f, angle);
+
+	if(!interpolate){
+		 find->second.old_angle = find->second.angle;
+	}
+
 	return noError();
 }
 
@@ -523,6 +533,7 @@ void Ogl33Scene::updateState(float interval){
 		iter.second.old_pos[1] = iter.second.pos[1] * interval + iter.second.old_pos[1] * (1.f - interval);
 
 		iter.second.old_angle = slerp2D<float>(iter.second.old_angle, iter.second.angle, interval);
+		iter.second.old_angle /= std::abs(iter.second.old_angle);
 	}
 }
 
@@ -1313,10 +1324,10 @@ Conveyor<void> Ogl33Render::destroyObject(const RenderSceneId& scene, const Rend
 	return Conveyor<void>{criticalError("Couldn't find scene")};
 }
 
-Conveyor<void> Ogl33Render::setObjectPosition(const RenderSceneId& scene, const RenderObjectId& obj, float x, float y) noexcept {
+Conveyor<void> Ogl33Render::setObjectPosition(const RenderSceneId& scene, const RenderObjectId& obj, float x, float y, bool interpolate) noexcept {
 	auto find = scenes.find(scene);
 	if(find != scenes.end()){
-		find->second.setObjectPosition(obj, x, y);
+		find->second.setObjectPosition(obj, x, y, interpolate);
 		/// @todo
 		/// Technically not noError
 		return Conveyor<void>{Void{}};
@@ -1324,10 +1335,10 @@ Conveyor<void> Ogl33Render::setObjectPosition(const RenderSceneId& scene, const 
 	return Conveyor<void>{criticalError("Couldn't find scene")};
 }
 
-Conveyor<void> Ogl33Render::setObjectRotation(const RenderSceneId& scene, const RenderObjectId& obj, float angle) noexcept {
+Conveyor<void> Ogl33Render::setObjectRotation(const RenderSceneId& scene, const RenderObjectId& obj, float angle, bool interpolate) noexcept {
 	auto find = scenes.find(scene);
 	if(find != scenes.end()){
-		find->second.setObjectRotation(obj, angle);
+		find->second.setObjectRotation(obj, angle, interpolate);
 		/// @todo
 		/// Technically not noError
 		return Conveyor<void>{Void{}};
@@ -1572,8 +1583,6 @@ void Ogl33Render::step(const std::chrono::steady_clock::time_point& tp) noexcept
 	std::chrono::duration<float> interval = tp - old_time_point;
 
 	float relative_tp = std::max(0.f, std::min(1.0f, interval.count() / range.count()));
-
-	std::cout<<"Time: "<<relative_tp<<" "<<interval.count() / range.count()<<std::endl;
 
 	stepRenderTargetTimes(tp);
 

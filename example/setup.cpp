@@ -120,6 +120,10 @@ int main() {
 	//	======================= Render Objects ===============================
 	RenderObjectId ro_id =
 		render_2d->createObject(scene_id, gsq_rp_id).take().value();
+
+	RenderObjectId ro_spin_id =
+		render_2d->createObject(scene_id, gsq_rp_id).take().value();
+
 	std::array<std::array<RenderObjectId, 3>, 3> bg_ro_ids = {
 		render_2d->createObject(scene_id, bg_rp_id).take().value(),
 		render_2d->createObject(scene_id, bg_rp_id).take().value(),
@@ -137,6 +141,7 @@ int main() {
 										 i * 80.f - 80.f, j * 80.f - 80.f);
 		}
 	}
+	render_2d->setObjectPosition(scene_id, ro_spin_id, 5.f, 0.f);
 
 	RenderCameraId camera_id = render_2d->createCamera().take().value();
 	float aspect = 600.f / 400.f;
@@ -232,17 +237,25 @@ int main() {
 	auto old_time = std::chrono::steady_clock::now();
 	auto next_phys_time = old_time;
 
-	float phys_time_delta = 1.f / 30.f;
+	float phys_time_delta = 1.f / 10.f;
 
+	float angle = 0.f;
 	while (running) {
 		auto time = std::chrono::steady_clock::now();
 
-		if( time >= next_phys_time ){
-			next_phys_time += std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::duration<float>{phys_time_delta});
-			render->updateTime(time, next_phys_time + std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::duration<float>{phys_time_delta}));
+		if (time >= next_phys_time) {
+			next_phys_time +=
+				std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+					std::chrono::duration<float>{phys_time_delta});
+			render->updateTime(
+				time, next_phys_time +
+						  std::chrono::duration_cast<
+							  std::chrono::steady_clock::duration>(
+							  std::chrono::duration<float>{phys_time_delta}));
 
 			if (y <= 1e-5f) {
-				float friction = 9.81 * ((0.f < vx) - (vx < 0.f)) * phys_time_delta;
+				float friction =
+					9.81 * ((0.f < vx) - (vx < 0.f)) * phys_time_delta;
 				if (std::abs(vx) < std::abs(friction)) {
 					vx -= 0.f;
 				} else {
@@ -252,10 +265,14 @@ int main() {
 			vx = dx * 15.f;
 			vy = dy * 15.f;
 
+			angle += phys_time_delta;
+
 			x += vx * phys_time_delta;
 			y += vy * phys_time_delta;
 
 			render_2d->setCameraPosition(camera_id, x, y);
+
+			render_2d->setObjectRotation(scene_id, ro_spin_id, angle);
 
 			int64_t ix = static_cast<int64_t>(x / 80.f);
 			int64_t iy = static_cast<int64_t>(y / 80.f);
@@ -264,7 +281,7 @@ int main() {
 					render_2d->setObjectPosition(
 						scene_id, bg_ro_ids[i][j],
 						(static_cast<int64_t>(i) + ix - 1) * 80.f,
-						(static_cast<int64_t>(j) + iy - 1) * 80.f);
+						(static_cast<int64_t>(j) + iy - 1) * 80.f, false);
 				}
 			}
 

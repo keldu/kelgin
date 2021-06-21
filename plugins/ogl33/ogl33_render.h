@@ -288,8 +288,8 @@ public:
 
 	ErrorOr<RenderObjectId> createObject(const RenderPropertyId& id) noexcept;
 	void destroyObject(const RenderObjectId& id) noexcept;
-	Error setObjectPosition(const RenderObjectId& id, float x, float y) noexcept;
-	Error setObjectRotation(const RenderObjectId& id, float a) noexcept;
+	Error setObjectPosition(const RenderObjectId& id, float x, float y, bool interpolate) noexcept;
+	Error setObjectRotation(const RenderObjectId& id, float a, bool interpolate) noexcept;
 	Error setObjectVisibility(const RenderObjectId& id, bool v) noexcept;
 	Error setObjectLayer(const RenderObjectId& id, float l) noexcept;
 
@@ -459,8 +459,8 @@ public:
 
 	Conveyor<RenderSceneId> createScene() noexcept override;
 	Conveyor<RenderObjectId> createObject(const RenderSceneId&, const RenderPropertyId&) noexcept override;
-	Conveyor<void> setObjectPosition(const RenderSceneId&, const RenderObjectId&, float, float) noexcept override;
-	Conveyor<void> setObjectRotation(const RenderSceneId&, const RenderObjectId&, float) noexcept override;
+	Conveyor<void> setObjectPosition(const RenderSceneId&, const RenderObjectId&, float, float, bool interpolate = true) noexcept override;
+	Conveyor<void> setObjectRotation(const RenderSceneId&, const RenderObjectId&, float, bool interpolate = true) noexcept override;
 	Conveyor<void> setObjectVisibility(const RenderSceneId&, const RenderObjectId&, bool) noexcept override;
 	Conveyor<void> setObjectLayer(const RenderSceneId& id, const RenderObjectId&, float) noexcept override;
 	Conveyor<void> destroyObject(const RenderSceneId&, const RenderObjectId&) noexcept override;

@@ -128,8 +128,8 @@ public:
 	virtual Conveyor<RenderSceneId> createScene() noexcept = 0;
 	virtual Conveyor<RenderObjectId> createObject(const RenderSceneId&, const RenderPropertyId&) noexcept = 0;
 	virtual Conveyor<void> destroyObject(const RenderSceneId&, const RenderObjectId&) noexcept = 0;
-	virtual Conveyor<void> setObjectPosition(const RenderSceneId&, const RenderObjectId&, float, float) noexcept = 0;
-	virtual Conveyor<void> setObjectRotation(const RenderSceneId&, const RenderObjectId&, float) noexcept = 0;
+	virtual Conveyor<void> setObjectPosition(const RenderSceneId&, const RenderObjectId&, float, float, bool interpolate = true) noexcept = 0;
+	virtual Conveyor<void> setObjectRotation(const RenderSceneId&, const RenderObjectId&, float, bool interpolate = true) noexcept = 0;
 	virtual Conveyor<void> setObjectVisibility(const RenderSceneId&, const RenderObjectId&, bool) noexcept = 0;
 	virtual Conveyor<void> setObjectLayer(const RenderSceneId& id, const RenderObjectId&, float) noexcept = 0;
 	virtual Conveyor<void> destroyScene(const RenderSceneId&) noexcept = 0;
