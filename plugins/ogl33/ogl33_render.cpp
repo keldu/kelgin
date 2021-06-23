@@ -266,6 +266,14 @@ void Ogl33Window::beginRender(){
 		return;
 	}
 	window->bind();
+
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+	glFrontFace(GL_CCW);
+
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(0,0,width(),height());
 	glClearColor(clear_colour[0], clear_colour[1], clear_colour[2], clear_colour[3]);
@@ -605,7 +613,6 @@ void Ogl33RenderStage::renderOne(Ogl33Program& program, Ogl33RenderProperty& pro
 	mvp = vp * mvp;
 
 	program.setMvp(mvp);
-	program.setLayer(-0.5f);
 
 	program.setMesh(mesh);
 	glDrawElements(GL_TRIANGLES, mesh.indexCount(), GL_UNSIGNED_INT, 0L);
@@ -1584,7 +1591,6 @@ void Ogl33Render::step(const std::chrono::steady_clock::time_point& tp) noexcept
 	float relative_tp = std::max(0.f, std::min(1.0f, interval.count() / range.count()));
 
 	stepRenderTargetTimes(tp);
-
 
 	for(;!render_target_draw_tasks.empty(); render_target_draw_tasks.pop()){
 		auto front = render_target_draw_tasks.front();

@@ -124,6 +124,9 @@ int main() {
 	RenderObjectId ro_spin_id =
 		render_2d->createObject(scene_id, gsq_rp_id).take().value();
 
+	render_2d->setObjectLayer(scene_id, ro_id, -0.1f).take().value();
+	render_2d->setObjectLayer(scene_id, ro_spin_id, -0.1f).take().value();
+
 	std::array<std::array<RenderObjectId, 3>, 3> bg_ro_ids = {
 		render_2d->createObject(scene_id, bg_rp_id).take().value(),
 		render_2d->createObject(scene_id, bg_rp_id).take().value(),
@@ -139,6 +142,7 @@ int main() {
 		for (size_t j = 0; j < 3; ++j) {
 			render_2d->setObjectPosition(scene_id, bg_ro_ids[i][j],
 										 i * 80.f - 80.f, j * 80.f - 80.f);
+			render_2d->setObjectLayer(scene_id, bg_ro_ids[i][j], 0.2f);
 		}
 	}
 	render_2d->setObjectPosition(scene_id, ro_spin_id, 5.f, 0.f);

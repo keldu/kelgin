@@ -17,7 +17,7 @@ const gin::MeshData default_mesh = {
 			{-1.f, 1.f}, {0.f, 0.f},   // top left
 		}
 	},
-	{0, 1, 2, 2, 0, 3}
+	{2, 1, 0, 2, 0, 3}
 };
 
 const gin::MeshData bg_mesh = {
@@ -35,5 +35,5 @@ const gin::MeshData bg_mesh = {
 			{-40.f, 40.f}, {0.f, 0.f}
 		},
 	},
-	{0, 1, 2, 2, 0, 3}
+	{2, 1, 0, 2, 0, 3}
 };
