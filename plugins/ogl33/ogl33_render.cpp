@@ -188,14 +188,6 @@ void Ogl33Program::setMvp(const Matrix<float,3,3>& mvp){
 
 void Ogl33Program::setMesh(const Ogl33Mesh& mesh){
 	mesh.bindVertexArray();
-	mesh.bindAttribute();
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(MeshData::Vertex), nullptr);
-
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(MeshData::Vertex), reinterpret_cast<void*>(offsetof(MeshData::Vertex, uvs)));
-
-	mesh.bindIndex();
 }
 
 void Ogl33Program::setLayer(float layer){
@@ -595,7 +587,6 @@ void Ogl33Scene3d::updateState(){
 }
 
 void Ogl33RenderStage::renderOne(Ogl33Program& program, Ogl33RenderProperty& property, Ogl33Scene::RenderObject& object, Ogl33Mesh& mesh, Ogl33Texture& texture, Matrix<float, 3, 3>& vp, float time_interval){
-	program.setMesh(mesh);
 	program.setTexture(texture);
 	program.setLayer(object.layer);
 	Matrix<float, 3, 3> mvp;
@@ -616,6 +607,7 @@ void Ogl33RenderStage::renderOne(Ogl33Program& program, Ogl33RenderProperty& pro
 	program.setMvp(mvp);
 	program.setLayer(-0.5f);
 
+	program.setMesh(mesh);
 	glDrawElements(GL_TRIANGLES, mesh.indexCount(), GL_UNSIGNED_INT, 0L);
 }
 

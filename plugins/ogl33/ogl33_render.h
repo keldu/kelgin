@@ -75,8 +75,6 @@ public:
 
 	void bindVertexArray() const;
 
-	// void bindAttribute() const;
-
 	void bindAttribute() const;
 	void bindIndex() const;
 
