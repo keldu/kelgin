@@ -31,13 +31,29 @@ using RenderProperty3dId = ResourceId;
 using RenderObject3dId = ResourceId;
 using RenderScene3dId = ResourceId;
 using RenderStage3dId = ResourceId;
-using RenderAnimation3dId = ResourceId;
+// using RenderAnimation3dId = ResourceId;
 
 class MeshData {
 public:
-	std::vector<float> vertices;
-	std::vector<float> uvs;
+	struct Vertex {
+		std::array<float, 2> position;
+		std::array<float, 2> uvs;
+	};
+
+	std::vector<Vertex> vertices;
 	std::vector<unsigned int> indices;
+};
+
+class RenderAnimationData2D {
+public:
+	bool repeat = false;
+
+	struct Frame{
+		size_t key_frame;
+		std::chrono::milliseconds length;
+	};
+
+	std::vector<Frame> frames;
 };
 
 class Mesh3dData {
@@ -139,9 +155,9 @@ public:
 	virtual Conveyor<void> destroyStage(const RenderStageId&) noexcept = 0;
 
 	// Animation Operations
-	// virtual Conveyor<RenderAnimationId> createAnimation() noexcept = 0;
-	// virtual Conveyor<void> destroyAnimation(const RenderAnimationId&) noexcept = 0;
-	// virtual Conveyor<void> playAnimation(const RenderSceneId& id, const RenderObjectId& obj, const RenderAnimationId&) = 0;
+	virtual Conveyor<RenderAnimationId> createAnimation(const RenderAnimationData2D& data) noexcept = 0;
+	virtual Conveyor<void> destroyAnimation(const RenderAnimationId&) noexcept = 0;
+	virtual Conveyor<void> playAnimation(const RenderSceneId& id, const RenderObjectId& obj, const RenderAnimationId&) noexcept = 0;
 };
 
 class LowLevelRender3D {

@@ -187,13 +187,13 @@ void Ogl33Program::setMvp(const Matrix<float,3,3>& mvp){
 }
 
 void Ogl33Program::setMesh(const Ogl33Mesh& mesh){
+	mesh.bindVertexArray();
+	mesh.bindAttribute();
 	glEnableVertexAttribArray(0);
-	mesh.bindVertex();
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, static_cast<void *>(0));
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(MeshData::Vertex), nullptr);
 
 	glEnableVertexAttribArray(1);
-	mesh.bindUV();
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, static_cast<void *>(0));
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(MeshData::Vertex), reinterpret_cast<void*>(offsetof(MeshData::Vertex, uvs)));
 
 	mesh.bindIndex();
 }
@@ -614,6 +614,7 @@ void Ogl33RenderStage::renderOne(Ogl33Program& program, Ogl33RenderProperty& pro
 	mvp = vp * mvp;
 
 	program.setMvp(mvp);
+	program.setLayer(-0.5f);
 
 	glDrawElements(GL_TRIANGLES, mesh.indexCount(), GL_UNSIGNED_INT, 0L);
 }
@@ -640,6 +641,7 @@ void Ogl33RenderStage::render(Ogl33Render& render, float time_interval){
 	scene->visit(*camera, draw_queue);
 
 	program->use();
+	glActiveTexture(GL_TEXTURE0);
 
 	Matrix<float, 3, 3> vp = camera->projection()*camera->view(time_interval);
 
@@ -707,8 +709,7 @@ Ogl33Render::Ogl33Render(Own<GlContext>&& ctx):
 }
 
 Ogl33Render::~Ogl33Render(){
-	if(loaded_glad && vao > 0){
-		glDeleteVertexArrays(1,&vao);
+	if(loaded_glad){
 	}
 }
 
@@ -808,35 +809,38 @@ Ogl33Mesh3d* Ogl33Render::getMesh3d(const Mesh3dId& id) noexcept {
 }
 
 Conveyor<MeshId> Ogl33Render::createMesh(const MeshData& data) noexcept {
-	std::array<GLuint,3> ids;
+	Mesh3dId id = searchForFreeId(meshes);
+	std::array<GLuint,2> ids;
 
 	/// @todo ensure that the current render context is bound
 
-	glGenBuffers(3, &ids[0]);
+	GLuint vao;
 
+	glGenVertexArrays(1, &vao);
+	glGenBuffers(2,&ids[0]);
+
+	glBindVertexArray(vao);
 	glBindBuffer(GL_ARRAY_BUFFER, ids[0]);
-	glBufferData(GL_ARRAY_BUFFER, data.vertices.size() * sizeof(float), data.vertices.data(), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, data.vertices.size() * sizeof(MeshData::Vertex), data.vertices.data(), GL_STATIC_DRAW);
 
-	glBindBuffer(GL_ARRAY_BUFFER, ids[1]);
-	glBufferData(GL_ARRAY_BUFFER, data.uvs.size() * sizeof(float), data.uvs.data(), GL_STATIC_DRAW);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ids[2]);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ids[1]);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, data.indices.size() * sizeof(unsigned int), data.indices.data(), GL_STATIC_DRAW);
 
-// This is unnecessary in a correct renderer impl
-#ifndef NDEBUG
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-#endif
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(MeshData::Vertex), nullptr);
 
-	MeshId m_id = searchForFreeId(meshes);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(MeshData::Vertex), reinterpret_cast<void*>(offsetof(MeshData::Vertex, uvs)));
 
+	#ifndef NDEBUG
+		glBindVertexArray(0);
+	#endif
 	try{
-		meshes.insert(std::make_pair(m_id,Ogl33Mesh{std::move(ids), data.indices.size()}));
-	}catch(const std::bad_alloc&){
+		meshes.insert(std::make_pair(id, Ogl33Mesh{vao, std::move(ids), data.indices.size()}));
+	}catch(const std::bad_alloc& ){
 		return Conveyor<MeshId>{criticalError("Out of memory")};
 	}
-	return Conveyor<MeshId>{m_id};
+	return Conveyor<MeshId>{id};
 }
 
 Conveyor<void> Ogl33Render::setMeshData(const MeshId& id, const MeshData& data) noexcept {
@@ -911,8 +915,6 @@ Conveyor<RenderWindowId> Ogl33Render::createWindow(const RenderVideoMode& mode, 
 			std::cout<<"Failed to load glad"<<std::endl;
 			return 0;
 		}
-		glGenVertexArrays(1,&vao);
-		glBindVertexArray(vao);
 		loaded_glad = true;
 	}
 
@@ -1328,8 +1330,6 @@ Conveyor<void> Ogl33Render::setObjectPosition(const RenderSceneId& scene, const 
 	auto find = scenes.find(scene);
 	if(find != scenes.end()){
 		find->second.setObjectPosition(obj, x, y, interpolate);
-		/// @todo
-		/// Technically not noError
 		return Conveyor<void>{Void{}};
 	}
 	return Conveyor<void>{criticalError("Couldn't find scene")};
@@ -1339,8 +1339,6 @@ Conveyor<void> Ogl33Render::setObjectRotation(const RenderSceneId& scene, const 
 	auto find = scenes.find(scene);
 	if(find != scenes.end()){
 		find->second.setObjectRotation(obj, angle, interpolate);
-		/// @todo
-		/// Technically not noError
 		return Conveyor<void>{Void{}};
 	}
 	return Conveyor<void>{criticalError("Couldn't find scene")};
@@ -1350,8 +1348,6 @@ Conveyor<void> Ogl33Render::setObjectVisibility(const RenderSceneId& scene, cons
 	auto find = scenes.find(scene);
 	if(find != scenes.end()){
 		find->second.setObjectVisibility(obj, visible);
-		/// @todo
-		/// Technically not noError
 		return Conveyor<void>{Void{}};
 	}
 	return Conveyor<void>{criticalError("Couldn't find scene")};
@@ -1361,8 +1357,6 @@ Conveyor<void> Ogl33Render::setObjectLayer(const RenderSceneId& scene, const Ren
 	auto find = scenes.find(scene);
 	if(find != scenes.end()){
 		find->second.setObjectLayer(obj, layer);
-		/// @todo
-		/// Technically not noError
 		return Conveyor<void>{Void{}};
 	}
 	return Conveyor<void>{criticalError("Couldn't find scene")};
@@ -1371,6 +1365,19 @@ Conveyor<void> Ogl33Render::setObjectLayer(const RenderSceneId& scene, const Ren
 Conveyor<void> Ogl33Render::destroyScene(const RenderSceneId& id) noexcept {
 	scenes.erase(id);
 	return Conveyor<void>{Void{}};
+}
+
+
+Conveyor<RenderAnimationId> Ogl33Render::createAnimation(const RenderAnimationData2D& data) noexcept {
+	return criticalError("TODO");
+}
+
+Conveyor<void> Ogl33Render::destroyAnimation(const RenderAnimationId& animation_id) noexcept {
+	return criticalError("TODO");
+}
+
+Conveyor<void> Ogl33Render::playAnimation(const RenderSceneId& id, const RenderObjectId& obj, const RenderAnimationId& animation_id) noexcept {
+	return criticalError("TODO");
 }
 
 Conveyor<Mesh3dId> Ogl33Render::createMesh3d(const Mesh3dData& data) noexcept {

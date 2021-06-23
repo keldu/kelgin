@@ -63,21 +63,21 @@ public:
 /// @todo Implement usage of VertexArrayObjects
 class Ogl33Mesh {
 private:
-	std::array<GLuint,3> ids;
+	GLuint vao;
+	std::array<GLuint,2> ids;
 	size_t indices;
 	
-	// GLuint vao;
 public:
 	Ogl33Mesh();
-	Ogl33Mesh(std::array<GLuint,3>&&, size_t);
-	// Ogl33Mesh(std::array<GLuint,3>&&, size_t, GLuint);
+	Ogl33Mesh(GLuint vao, std::array<GLuint,2>&&, size_t ind);
 	~Ogl33Mesh();
 	Ogl33Mesh(Ogl33Mesh&&);
 
+	void bindVertexArray() const;
+
 	// void bindAttribute() const;
 
-	void bindVertex() const;
-	void bindUV() const;
+	void bindAttribute() const;
 	void bindIndex() const;
 
 	void setData(const MeshData& data);
@@ -140,12 +140,12 @@ private:
 	GLuint mvp_uniform;
 public:
 	Ogl33Program3d();
-	Ogl33Program3d(GLuint, GLuint, GLuint);
+	Ogl33Program3d(GLuint program, GLuint texture, GLuint mvp);
 	~Ogl33Program3d();
 
-	void setTexture(const Ogl33Texture&);
-	void setMvp(const Matrix<float, 4, 4>&);
-	void setMesh(const Ogl33Mesh3d&);
+	void setTexture(const Ogl33Texture& texture_id);
+	void setMvp(const Matrix<float, 4, 4>& mvp);
+	void setMesh(const Ogl33Mesh3d& mesh_id);
 
 	void use();
 };
@@ -361,7 +361,6 @@ private:
 
 	Ogl33RenderTargetStorage render_targets;
 	bool loaded_glad = false;
-	GLuint vao = 0;
 
 	// General Resource Storage
 	std::unordered_map<TextureId, Ogl33Texture> textures;
@@ -374,6 +373,8 @@ private:
 	std::unordered_map<RenderPropertyId, Ogl33RenderProperty> render_properties;
 	std::unordered_map<RenderSceneId, Ogl33Scene> scenes;
 	std::unordered_map<RenderStageId, Ogl33RenderStage> render_stages;
+
+	std::unordered_map<RenderAnimationId, RenderAnimationData2D> animation_data;
 
 	// Stages listening  to RenderTarget changes
 	std::unordered_multimap<RenderTargetId, RenderStageId> render_target_stages;
@@ -435,6 +436,8 @@ public:
 
 	Conveyor<RenderEvent::Events> listenToWindowEvents(const RenderWindowId&) noexcept override;
 
+	// 2D
+
 	Conveyor<ProgramId> createProgram(const std::string& vertex_src, const std::string& fragment_src) noexcept override;
 	Conveyor<ProgramId> createProgram() noexcept override;
 	Conveyor<void> destroyProgram(const ProgramId&) noexcept override;
@@ -465,6 +468,10 @@ public:
 	Conveyor<void> setObjectLayer(const RenderSceneId& id, const RenderObjectId&, float) noexcept override;
 	Conveyor<void> destroyObject(const RenderSceneId&, const RenderObjectId&) noexcept override;
 	Conveyor<void> destroyScene(const RenderSceneId&) noexcept override;
+
+	Conveyor<RenderAnimationId> createAnimation(const RenderAnimationData2D& data) noexcept override;
+	Conveyor<void> destroyAnimation(const RenderAnimationId&) noexcept override;
+	Conveyor<void> playAnimation(const RenderSceneId& id, const RenderObjectId& obj, const RenderAnimationId&) noexcept override;
 
 	// 3D
 	Conveyor<Mesh3dId> createMesh3d(const Mesh3dData&) noexcept override;

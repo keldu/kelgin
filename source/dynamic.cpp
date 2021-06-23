@@ -8,6 +8,10 @@
 #include <cassert>
 #include <dlfcn.h>
 
+#ifndef NDEBUG
+#include <iostream>
+#endif
+
 namespace gin {
 class DynamicLibrary::Impl {
 public:
@@ -24,6 +28,9 @@ public:
 		void *symbol = dlsym(handle, sym.c_str());
 
 		if (!symbol) {
+#ifndef NDEBUG
+			std::cerr<<dlerror()<<std::endl;
+#endif
 			return nullptr;
 		}
 
@@ -57,6 +64,9 @@ void *DynamicLibrary::symbol(const std::string &sym) {
 ErrorOr<DynamicLibrary> loadDynamicLibrary(const std::filesystem::path &path) {
 	void *handle = dlopen(path.c_str(), RTLD_LAZY);
 	if (!handle) {
+#ifndef NDEBUG
+		std::cerr<<dlerror()<<std::endl;
+#endif
 		return criticalError("Couldn't open library");
 	}
 

@@ -240,6 +240,9 @@ int main() {
 	float phys_time_delta = 1.f / 10.f;
 
 	float angle = 0.f;
+	float fps = 0.f;
+	float kalman = 0.99f;
+
 	while (running) {
 		auto time = std::chrono::steady_clock::now();
 
@@ -292,6 +295,11 @@ int main() {
 
 		render->flush();
 		wait_scope.wait(std::chrono::milliseconds{1});
+
+		fps = fps * kalman + (1.f-kalman) / std::chrono::duration<float>{time-old_time}.count();
+
+		// std::cout<<"FPS: "<<fps<<std::endl;
+
 		old_time = time;
 	}
 
