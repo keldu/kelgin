@@ -162,12 +162,6 @@ public:
 	std::unordered_map<TextureId, Ogl33Texture> textures;
 	std::unordered_map<RenderViewportId, Ogl33Viewport> viewports;
 
-	// Stages listening  to RenderTarget changes
-	std::unordered_multimap<RenderTargetId, RenderStageId> render_target_stages;
-
-	// Stages listening  to RenderTarget changes
-	std::unordered_multimap<RenderTargetId, RenderStage3dId> render_target_stages_3d;
-
 	struct RenderTargetUpdate {
 		std::chrono::steady_clock::duration seconds_per_frame;
 		std::chrono::steady_clock::time_point next_update;
@@ -191,6 +185,9 @@ public:
 
 	std::unordered_map<RenderAnimationId, RenderAnimationData2D> animation_data;
 
+	// Stages listening  to RenderTarget changes
+	std::unordered_multimap<RenderTargetId, RenderStageId> render_target_stages;
+
 public:
 	Ogl33Resources2D(Ogl33Resources& resources):res{&resources}{}
 };
@@ -205,60 +202,30 @@ public:
 	std::unordered_map<RenderProperty3dId, Ogl33RenderProperty3d> render_properties_3d;
 	std::unordered_map<RenderScene3dId, Ogl33Scene3d> scenes_3d;
 	std::unordered_map<RenderStage3dId, Ogl33RenderStage3d> render_stages_3d;
+
+	// Stages listening  to RenderTarget changes
+	std::unordered_multimap<RenderTargetId, RenderStage3dId> render_target_stages_3d;
 public:
 	Ogl33Resources3D(Ogl33Resources& resources):res{&resources}{}
 };
 
-class Ogl33Render final : public LowLevelRender, public LowLevelRender2D, public LowLevelRender3D {
+class Ogl33Render;
+class Ogl33Render2D final : public LowLevelRender2D {
 private:
-	Own<GlContext> context;
+	Ogl33Resources2D resources;
+	Ogl33Render* render;
 
-	bool loaded_glad = false;
-
-	Ogl33Resources resources;
-
-	Ogl33Resources2D resources_2d;
-	Ogl33Resources2D resources_3d;
-
-	void stepRenderTargetTimes(const std::chrono::steady_clock::time_point&);
-
-	std::chrono::steady_clock::time_point old_time_point;
-	std::chrono::steady_clock::time_point time_point;
 public:
-	Ogl33Render(Own<GlContext>&&);
-	~Ogl33Render();
+	Ogl33Render2D(Ogl33Render& r);
 
-	Ogl33Scene* getScene(const RenderSceneId&) noexcept;
-	Ogl33Camera* getCamera(const RenderCameraId&) noexcept;
-	Ogl33Program* getProgram(const ProgramId&) noexcept;
-	Ogl33RenderProperty* getProperty(const RenderPropertyId&) noexcept;
-	Ogl33Mesh* getMesh(const MeshId&) noexcept;
-	Ogl33Texture* getTexture(const TextureId&) noexcept;
+	Ogl33Resources2D& getResources(){
+		return resources;
+	}
 
-	Ogl33Scene3d* getScene3d(const RenderScene3dId&) noexcept;
-	Ogl33Camera3d* getCamera3d(const RenderCamera3dId&) noexcept;
-	Ogl33Program3d* getProgram3d(const Program3dId&) noexcept;
-	Ogl33RenderProperty3d* getRenderProperty3d(const RenderProperty3dId&) noexcept;
-	Ogl33Mesh3d* getMesh3d(const Mesh3dId& ) noexcept;
-
-	LowLevelRender2D* interface2D() noexcept override {return this;}
-	LowLevelRender3D* interface3D() noexcept override {return this;}
- 
+	// 2D
 	Conveyor<MeshId> createMesh(const MeshData&) noexcept override;
 	Conveyor<void> setMeshData(const MeshId&, const MeshData&) noexcept override;
 	Conveyor<void> destroyMesh(const MeshId&) noexcept override;
-
-	Conveyor<TextureId> createTexture(const Image&) noexcept override;
-	Conveyor<void> destroyTexture(const TextureId&) noexcept override;
-
-	Conveyor<RenderWindowId> createWindow(const RenderVideoMode&, const std::string& title) noexcept override;
-	Conveyor<void> setWindowDesiredFPS(const RenderWindowId&, float fps) noexcept override;
-	Conveyor<void> setWindowVisibility(const RenderWindowId& id, bool show) noexcept override;
-	Conveyor<void> destroyWindow(const RenderWindowId& id) noexcept override;
-
-	Conveyor<RenderEvent::Events> listenToWindowEvents(const RenderWindowId&) noexcept override;
-
-	// 2D
 
 	Conveyor<ProgramId> createProgram(const std::string& vertex_src, const std::string& fragment_src) noexcept override;
 	Conveyor<ProgramId> createProgram() noexcept override;
@@ -272,10 +239,6 @@ public:
 	
 	Conveyor<RenderStageId> createStage(const RenderTargetId& id, const RenderViewportId&, const RenderSceneId&, const RenderCameraId&, const ProgramId&) noexcept override;
 	Conveyor<void> destroyStage(const RenderStageId&) noexcept override;
-
-	Conveyor<RenderViewportId> createViewport() noexcept override;
-	Conveyor<void> setViewportRect(const RenderViewportId&, float, float, float, float) noexcept override;
-	Conveyor<void> destroyViewport(const RenderViewportId&) noexcept override;
 
 	Conveyor<RenderPropertyId> createProperty(const MeshId&, const TextureId&) noexcept override;
 	Conveyor<void> setPropertyMesh(const RenderPropertyId&, const MeshId& id) noexcept override;
@@ -294,6 +257,17 @@ public:
 	Conveyor<RenderAnimationId> createAnimation(const RenderAnimationData2D& data) noexcept override;
 	Conveyor<void> destroyAnimation(const RenderAnimationId&) noexcept override;
 	Conveyor<void> playAnimation(const RenderSceneId& id, const RenderObjectId& obj, const RenderAnimationId&) noexcept override;
+};
+
+/*
+class Ogl33Render3D final : public LowLevelRender3D {
+private:
+	Ogl33Resources2D resources;
+	Ogl33Render* render;
+
+public:
+	Ogl33Render3D(Ogl33Render& r):resources_3d{r.getResources()}, render{&r}{}
+
 
 	// 3D
 	Conveyor<Mesh3dId> createMesh3d(const Mesh3dData&) noexcept override;
@@ -319,6 +293,64 @@ public:
 
 	Conveyor<RenderStage3dId> createStage3d(const RenderTargetId&, const RenderViewportId&, const RenderScene3dId&, const RenderCamera3dId&, const Program3dId&) noexcept override;
 	Conveyor<void> destroyStage3d(const RenderStage3dId&) noexcept override;
+};
+*/
+
+class Ogl33Render final : public LowLevelRender {
+private:
+	Own<GlContext> context;
+
+	bool loaded_glad = false;
+
+	Ogl33Resources resources;
+
+	Ogl33Render2D render_2d;
+	//Ogl33Render3D render_3d;
+
+	void stepRenderTargetTimes(const std::chrono::steady_clock::time_point&);
+
+	std::chrono::steady_clock::time_point old_time_point;
+	std::chrono::steady_clock::time_point time_point;
+public:
+	Ogl33Render(Own<GlContext>&&);
+	~Ogl33Render();
+
+	Ogl33Scene* getScene(const RenderSceneId&) noexcept;
+	Ogl33Camera* getCamera(const RenderCameraId&) noexcept;
+	Ogl33Program* getProgram(const ProgramId&) noexcept;
+	Ogl33RenderProperty* getProperty(const RenderPropertyId&) noexcept;
+	Ogl33Mesh* getMesh(const MeshId&) noexcept;
+	Ogl33Texture* getTexture(const TextureId&) noexcept;
+
+	
+	Ogl33Scene3d* getScene3d(const RenderScene3dId&) noexcept;
+	Ogl33Camera3d* getCamera3d(const RenderCamera3dId&) noexcept;
+	Ogl33Program3d* getProgram3d(const Program3dId&) noexcept;
+	Ogl33RenderProperty3d* getRenderProperty3d(const RenderProperty3dId&) noexcept;
+	Ogl33Mesh3d* getMesh3d(const Mesh3dId& ) noexcept;
+	
+
+	Ogl33Resources& getResources() noexcept {
+		return resources;
+	}
+
+	LowLevelRender2D* interface2D() noexcept override {return &render_2d;}
+	LowLevelRender3D* interface3D() noexcept override {return nullptr;}
+
+	Conveyor<TextureId> createTexture(const Image&) noexcept override;
+	Conveyor<void> destroyTexture(const TextureId&) noexcept override;
+
+	Conveyor<RenderWindowId> createWindow(const RenderVideoMode&, const std::string& title) noexcept override;
+	Conveyor<void> setWindowDesiredFPS(const RenderWindowId&, float fps) noexcept override;
+	Conveyor<void> setWindowVisibility(const RenderWindowId& id, bool show) noexcept override;
+	Conveyor<void> destroyWindow(const RenderWindowId& id) noexcept override;
+
+	Conveyor<RenderEvent::Events> listenToWindowEvents(const RenderWindowId&) noexcept override;
+
+	Conveyor<RenderViewportId> createViewport() noexcept override;
+	Conveyor<void> setViewportRect(const RenderViewportId&, float, float, float, float) noexcept override;
+	Conveyor<void> destroyViewport(const RenderViewportId&) noexcept override;
+
 
 	void step(const std::chrono::steady_clock::time_point&) noexcept override;
 	void flush() noexcept override;
