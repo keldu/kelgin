@@ -19,6 +19,9 @@
 #include <kelgin/common.h>
 
 #include "common/math.h"
+#include "common/shapes.h"
+
+#include "ogl33_mesh.h"
 
 namespace gin {
 class Ogl33Render;
@@ -60,49 +63,6 @@ public:
 	void use();
 };
 
-/// @todo Implement usage of VertexArrayObjects
-class Ogl33Mesh {
-private:
-	GLuint vao;
-	std::array<GLuint,2> ids;
-	size_t indices;
-	
-public:
-	Ogl33Mesh();
-	Ogl33Mesh(GLuint vao, std::array<GLuint,2>&&, size_t ind);
-	~Ogl33Mesh();
-	Ogl33Mesh(Ogl33Mesh&&);
-
-	void bindVertexArray() const;
-
-	void bindAttribute() const;
-	void bindIndex() const;
-
-	void setData(const MeshData& data);
-
-	size_t indexCount() const;
-};
-
-class Ogl33Mesh3d {
-private:
-	GLuint vao;
-	std::array<GLuint, 2> ids;
-	size_t indices;
-
-public:
-	Ogl33Mesh3d();
-	Ogl33Mesh3d(GLuint, std::array<GLuint, 2>&&, size_t);
-	~Ogl33Mesh3d();
-	Ogl33Mesh3d(Ogl33Mesh3d&&);
-
-	void bindAttribute() const;
-	void bindIndex() const;
-
-	void setData(const Mesh3dData& data);
-
-	size_t indexCount() const;
-};
-
 class Ogl33Camera3d {
 private:
 	Matrix<float, 4, 4> projection_matrix;
@@ -121,6 +81,8 @@ public:
 class Ogl33Texture {
 private:
 	GLuint tex_id;
+
+	std::vector<Rectangle<float>> sub_textures;
 public:
 	Ogl33Texture();
 	Ogl33Texture(GLuint tex_id);

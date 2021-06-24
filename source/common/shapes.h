@@ -3,6 +3,8 @@
 #include "math.h"
 
 #include <array>
+#include <cstdint>
+#include <optional>
 
 namespace gin {
 
@@ -13,18 +15,18 @@ private:
 public:
 	Point();
 
-	T& operator(size_t i);
-	const T& operator(size_t i) const;
+	T& operator()(size_t i);
+	const T& operator()(size_t i) const;
 
 };
 
 template<typename T>
 class Rectangle {
 private:
-	std::array<T,4> data;
+	std::array<Point<T,2>,2> data;
 public:
 	Rectangle();
-	Rectangle(T, T, T, T);
+	Rectangle(const Point<T,2>& bl, const Point<T,2>& wh);
 
 	T& x();
 	const T& x() const;
@@ -43,7 +45,7 @@ template<typename T>
 bool isInside(const Rectangle<T>& rect, const Point<T,2>& p);
 
 template<typename T>
-Rectangle<T> overlap(const Rectangle<T>&, const Rectangle<T>&);
+std::optional<Rectangle<T>> overlap(const Rectangle<T>& a, const Rectangle<T>& b);
 }
 
 #include "shapes.tmpl.h"

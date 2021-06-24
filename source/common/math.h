@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <complex>
+#include <array>
 
 namespace gin {
 template <typename T, size_t M, size_t N>

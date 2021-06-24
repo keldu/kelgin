@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../common/id.h"
+#include "../common/shapes.h"
 
 #include <kelgin/async.h>
 #include <kelgin/io.h>
@@ -77,6 +78,8 @@ public:
 	size_t width = 0, height = 0;
 	std::vector<uint8_t> pixels;
 	uint8_t channels = 0;
+
+	std::vector<Rectangle<float>> sub_images;
 };
 
 struct RenderEvent {
