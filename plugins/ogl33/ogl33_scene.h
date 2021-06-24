@@ -58,7 +58,6 @@ public:
 private:
 	std::unordered_map<RenderObject3dId, RenderObject> objects;
 public:
-
 	ErrorOr<RenderObject3dId> createObject(const RenderProperty3dId&) noexcept;
 	void destroyObject(const RenderObject3dId&) noexcept;
 

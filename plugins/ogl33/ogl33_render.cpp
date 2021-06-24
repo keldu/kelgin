@@ -832,7 +832,7 @@ Ogl33Mesh3d* Ogl33Render::getMesh3d(const Mesh3dId& id) noexcept {
 }
 */
 
-Conveyor<MeshId> Ogl33Render2D::createMesh(const MeshData& data) noexcept {
+ErrorOr<MeshId> Ogl33Render2D::createMesh(const MeshData& data) noexcept {
 	Mesh3dId id = searchForFreeId(resources.meshes);
 	std::array<GLuint,2> ids;
 
@@ -862,27 +862,27 @@ Conveyor<MeshId> Ogl33Render2D::createMesh(const MeshData& data) noexcept {
 	try{
 		resources.meshes.insert(std::make_pair(id, Ogl33Mesh{vao, std::move(ids), data.indices.size()}));
 	}catch(const std::bad_alloc& ){
-		return Conveyor<MeshId>{criticalError("Out of memory")};
+		return criticalError("Out of memory");
 	}
-	return Conveyor<MeshId>{id};
+	return id;
 }
 
-Conveyor<void> Ogl33Render2D::setMeshData(const MeshId& id, const MeshData& data) noexcept {
+Error Ogl33Render2D::setMeshData(const MeshId& id, const MeshData& data) noexcept {
 	auto find = resources.meshes.find(id);
 	if(find == resources.meshes.end()){
-		return Conveyor<void>{recoverableError("Couldn't find mesh")};
+		return recoverableError("Couldn't find mesh");
 	}
 
 	find->second.setData(data);
-	return Conveyor<void>{Void{}};
+	return noError();
 }
 
 /// @todo check if an error might be necessary
-Conveyor<void> Ogl33Render2D::destroyMesh(const MeshId& id) noexcept {
+Error Ogl33Render2D::destroyMesh(const MeshId& id) noexcept {
 
 	resources.meshes.erase(id);
 
-	return Conveyor<void>{Void{}};
+	return noError();
 }
 
 namespace {
@@ -896,7 +896,7 @@ GLint translateImageChannel(uint8_t channels){
 }
 }
 
-Conveyor<TextureId> Ogl33Render::createTexture(const Image& image) noexcept {
+ErrorOr<TextureId> Ogl33Render::createTexture(const Image& image) noexcept {
 	GLuint texture_id;
 	glGenTextures(1, &texture_id);
 	glBindTexture(GL_TEXTURE_2D, texture_id);
@@ -915,19 +915,19 @@ Conveyor<TextureId> Ogl33Render::createTexture(const Image& image) noexcept {
 	try{
 		resources.textures.insert(std::make_pair(t_id, Ogl33Texture{texture_id}));
 	}catch(const std::bad_alloc&){
-		return Conveyor<TextureId>{criticalError("Out of memory")};
+		return criticalError("Out of memory");
 	}
-	return Conveyor<TextureId>{t_id};
+	return t_id;
 }
 
 /// @todo check if an error might be necessary
-Conveyor<void> Ogl33Render::destroyTexture(const TextureId& id) noexcept {
+Error Ogl33Render::destroyTexture(const TextureId& id) noexcept {
 	resources.textures.erase(id);
 
-	return Conveyor<void>{Void{}};
+	return noError();
 }
 
-Conveyor<RenderWindowId> Ogl33Render::createWindow(const RenderVideoMode& mode, const std::string& title) noexcept {
+ErrorOr<RenderWindowId> Ogl33Render::createWindow(const RenderVideoMode& mode, const std::string& title) noexcept {
 	auto gl_win = context->createWindow(VideoMode{mode.width,mode.height}, title);
 	if(!gl_win){
 		return criticalError("Couldn't create window");
@@ -944,16 +944,16 @@ Conveyor<RenderWindowId> Ogl33Render::createWindow(const RenderVideoMode& mode, 
 
 	try{
 		auto id = resources.render_targets.insert(Ogl33Window{std::move(gl_win)});
-		return Conveyor<RenderWindowId>{id};
+		return static_cast<RenderWindowId>(id);
 	}catch(const std::bad_alloc&){
-		return Conveyor<RenderWindowId>{criticalError("Out of memory")};
+		return criticalError("Out of memory");
 	} 
 }
 
-Conveyor<void> Ogl33Render::setWindowDesiredFPS(const RenderWindowId& id, float fps) noexcept {
+Error Ogl33Render::setWindowDesiredFPS(const RenderWindowId& id, float fps) noexcept {
 	Ogl33Window* window = resources.render_targets.getWindow(id);
 	if(!window){
-		return Conveyor<void>{criticalError("Couldn't create Window")};
+		return criticalError("Couldn't create Window");
 	}
 
 	auto& update = resources.render_target_times[static_cast<RenderTargetId>(id)];
@@ -962,17 +962,17 @@ Conveyor<void> Ogl33Render::setWindowDesiredFPS(const RenderWindowId& id, float 
 	update.next_update = std::chrono::steady_clock::now();
 	update.seconds_per_frame = std::chrono::duration_cast<std::chrono::steady_clock::duration>(fps_chrono);
 
-	return Conveyor<void>{Void{}};
+	return noError();
 }
 
-Conveyor<void> Ogl33Render::destroyWindow(const RenderWindowId& id) noexcept {
+Error Ogl33Render::destroyWindow(const RenderWindowId& id) noexcept {
 	resources.render_targets.erase(static_cast<RenderTargetId>(id));
 
 	render_2d.getResources().render_target_stages.erase(static_cast<RenderTargetId>(id));
 	
 	resources.render_target_times.erase(static_cast<RenderTargetId>(id));
 
-	return Conveyor<void>{Void{}};
+	return noError();
 }
 
 Conveyor<RenderEvent::Events> Ogl33Render::listenToWindowEvents(const RenderWindowId& id) noexcept {
@@ -984,10 +984,10 @@ Conveyor<RenderEvent::Events> Ogl33Render::listenToWindowEvents(const RenderWind
 	return window->listenToWindowEvents();
 }
 
-Conveyor<void> Ogl33Render::setWindowVisibility(const RenderWindowId& id, bool show) noexcept {
+Error Ogl33Render::setWindowVisibility(const RenderWindowId& id, bool show) noexcept {
 	Ogl33Window* window = resources.render_targets.getWindow(id);
 	if(!window){
-		return Conveyor<void>{criticalError("No window found")};
+		return criticalError("No window found");
 	}
 
 	if(show){
@@ -996,7 +996,7 @@ Conveyor<void> Ogl33Render::setWindowVisibility(const RenderWindowId& id, bool s
 		window->hide();
 	}
 
-	return Conveyor<void>{Void{}};
+	return noError();
 }
 
 namespace {
@@ -1083,11 +1083,11 @@ ErrorOr<GLuint> createOgl33Program(const std::string& vertex_src, const std::str
 }
 }
 
-Conveyor<ProgramId> Ogl33Render2D::createProgram(const std::string& vertex_src, const std::string& fragment_src) noexcept {
+ErrorOr<ProgramId> Ogl33Render2D::createProgram(const std::string& vertex_src, const std::string& fragment_src) noexcept {
 	ErrorOr<GLuint> error_p_id = createOgl33Program(vertex_src, fragment_src);
 
 	if(error_p_id.isError()){
-		return Conveyor<ProgramId>{error_p_id.error().copyError()};
+		return error_p_id.error().copyError();
 	}
 
 	GLuint& p_id = error_p_id.value();
@@ -1096,15 +1096,15 @@ Conveyor<ProgramId> Ogl33Render2D::createProgram(const std::string& vertex_src, 
 	GLuint texture_sampler_id = glGetUniformLocation(p_id, "texture_sampler");
 	GLuint layer_id = glGetUniformLocation(p_id, "layer");
 
-	ProgramId id = searchForFreeId(resources.programs);
+	ProgramId program_id = searchForFreeId(resources.programs);
 
 	try{
-		resources.programs.insert(std::make_pair(id, Ogl33Program{p_id, texture_sampler_id, mvp_id, layer_id}));
+		resources.programs.insert(std::make_pair(program_id, Ogl33Program{p_id, texture_sampler_id, mvp_id, layer_id}));
 	}catch(const std::bad_alloc&){
-		return Conveyor<ProgramId>{criticalError("Out of memory")};
+		return criticalError("Out of memory");
 	}
 
-	return Conveyor<ProgramId>{id};
+	return program_id;
 }
 
 namespace {
@@ -1169,78 +1169,78 @@ void main(){
 )";
 }
 
-Conveyor<ProgramId> Ogl33Render2D::createProgram() noexcept {
+ErrorOr<ProgramId> Ogl33Render2D::createProgram() noexcept {
 	return createProgram(default_vertex_shader_program, default_fragment_shader_program);
 }
 
-Conveyor<void> Ogl33Render2D::destroyProgram(const ProgramId& id) noexcept {
+Error Ogl33Render2D::destroyProgram(const ProgramId& id) noexcept {
 	resources.programs.erase(id);
-	return Conveyor<void>{Void{}};
+	return noError();
 }
 
-Conveyor<RenderCameraId> Ogl33Render2D::createCamera() noexcept {
+ErrorOr<RenderCameraId> Ogl33Render2D::createCamera() noexcept {
 
 	RenderCameraId id = searchForFreeId(resources.cameras);
 
 	try{
 		resources.cameras.insert(std::make_pair(id, Ogl33Camera{}));
 	}catch(const std::bad_alloc&){
-		return Conveyor<RenderCameraId>{criticalError("Out of memory")};
+		return criticalError("Out of memory");
 	}
-	return Conveyor<RenderCameraId>{id};
+	return id;
 }
 
-Conveyor<void> Ogl33Render2D::setCameraOrthographic(const RenderCameraId& id, float l, float r, float t, float b) noexcept {
+Error Ogl33Render2D::setCameraOrthographic(const RenderCameraId& id, float l, float r, float t, float b) noexcept {
 	auto find = resources.cameras.find(id);
 	if(find != resources.cameras.end()){
 		find->second.setOrtho(l, r, t , b);
-		return Conveyor<void>{Void{}};
+		return noError();
 	}
 
-	return Conveyor<void>{criticalError("No camera found")};
+	return criticalError("No camera found");
 }
 
-Conveyor<void> Ogl33Render2D::setCameraPosition(const RenderCameraId& id, float x, float y) noexcept {
+Error Ogl33Render2D::setCameraPosition(const RenderCameraId& id, float x, float y) noexcept {
 	auto find = resources.cameras.find(id);
 	if(find != resources.cameras.end()){
 		find->second.setViewPosition(x,y);
-		return Conveyor<void>{Void{}};
+		return noError();
 	}
-	return Conveyor<void>{criticalError("No camera found")};
+	return criticalError("No camera found");
 }
 
-Conveyor<void> Ogl33Render2D::setCameraRotation(const RenderCameraId& id, float angle) noexcept {
+Error Ogl33Render2D::setCameraRotation(const RenderCameraId& id, float angle) noexcept {
 	auto find = resources.cameras.find(id);
 	if(find != resources.cameras.end()){
 		find->second.setViewRotation(angle);
-		return Conveyor<void>{Void{}};
+		return noError();
 	}
-	return Conveyor<void>{criticalError("No camera found")};
+	return criticalError("No camera found");
 }
 
-Conveyor<void> Ogl33Render2D::destroyCamera(const RenderCameraId& id) noexcept {
+Error Ogl33Render2D::destroyCamera(const RenderCameraId& id) noexcept {
 	resources.cameras.erase(id);
-	return Conveyor<void>{Void{}};
+	return noError();
 }
 
-Conveyor<RenderStageId> Ogl33Render2D::createStage(const RenderTargetId& target_id, const RenderViewportId& viewport_id, const RenderSceneId& scene, const RenderCameraId& cam, const ProgramId& program_id) noexcept {
+ErrorOr<RenderStageId> Ogl33Render2D::createStage(const RenderTargetId& target_id, const RenderViewportId& viewport_id, const RenderSceneId& scene, const RenderCameraId& cam, const ProgramId& program_id) noexcept {
 
 	RenderStageId id = searchForFreeId(resources.render_stages);
 	try{
 		resources.render_stages.insert(std::make_pair(id, Ogl33RenderStage{target_id, viewport_id, scene, cam, program_id}));
 	}catch(const std::bad_alloc&){
-		return Conveyor<RenderStageId>{criticalError("Out of memory")};
+		return criticalError("Out of memory");
 	}
 	try{
 		resources.render_target_stages.insert(std::make_pair(target_id, id));
 	}catch(const std::bad_alloc&){
 		resources.render_stages.erase(id);
-		return Conveyor<RenderStageId>{criticalError("Out of memory")};
+		return criticalError("Out of memory");
 	}
-	return Conveyor<RenderStageId>{id};
+	return id;
 }
 
-Conveyor<void> Ogl33Render2D::destroyStage(const RenderStageId& id) noexcept {
+Error Ogl33Render2D::destroyStage(const RenderStageId& id) noexcept {
 	auto find = resources.render_stages.find(id);
 	if(find != resources.render_stages.end()){
 		auto range = resources.render_target_stages.equal_range(find->second.target_id);
@@ -1254,157 +1254,145 @@ Conveyor<void> Ogl33Render2D::destroyStage(const RenderStageId& id) noexcept {
 
 		resources.render_stages.erase(find);
 
-		return Conveyor<void>{Void{}};
+		return noError();
 	}
 
-	return Conveyor<void>{criticalError("No RenderStage found")};
+	return criticalError("No RenderStage found");
 }
 
-Conveyor<RenderViewportId> Ogl33Render::createViewport() noexcept {
+ErrorOr<RenderViewportId> Ogl33Render::createViewport() noexcept {
 	RenderViewportId id = searchForFreeId(resources.viewports);
 	try{
 		resources.viewports.insert(std::make_pair(id, Ogl33Viewport{0.f,0.f,0.f,0.f}));
 	}catch(const std::bad_alloc&){
-		return Conveyor<RenderViewportId>{criticalError("Out of memory")};
+		return criticalError("Out of memory");
 	}
-	return Conveyor<RenderViewportId>{id};
+	return id;
 }
 
-Conveyor<void> Ogl33Render::setViewportRect(const RenderViewportId& id, float x, float y, float width, float height) noexcept {
+Error Ogl33Render::setViewportRect(const RenderViewportId& id, float x, float y, float width, float height) noexcept {
 	auto find = resources.viewports.find(id);
 	if(find != resources.viewports.end()){
 		find->second = Ogl33Viewport{x, y, width, height};
-		return Conveyor<void>{Void{}};
+		return noError();
 	}
-	return Conveyor<void>{criticalError("No Viewport found")};
+	return criticalError("No Viewport found");
 }
 
-Conveyor<void> Ogl33Render::destroyViewport(const RenderViewportId& id) noexcept {
+Error Ogl33Render::destroyViewport(const RenderViewportId& id) noexcept {
 	resources.viewports.erase(id);
-	return Conveyor<void>{Void{}};
+	return noError();
 }
 
-Conveyor<RenderPropertyId> Ogl33Render2D::createProperty(const MeshId& mesh, const TextureId& texture) noexcept {
+ErrorOr<RenderPropertyId> Ogl33Render2D::createProperty(const MeshId& mesh, const TextureId& texture) noexcept {
 	RenderPropertyId id = searchForFreeId(resources.render_properties);
 	try{
 		resources.render_properties.insert(std::make_pair(id, Ogl33RenderProperty{mesh, texture}));
 	}catch(const std::bad_alloc&){
-		return Conveyor<RenderPropertyId>{criticalError("Out of memory")};
+		return criticalError("Out of memory");
 	}
-	return Conveyor<RenderPropertyId>{id};
+	return id;
 }
 
-Conveyor<void> Ogl33Render2D::setPropertyMesh(const RenderPropertyId& id, const MeshId& mesh_id) noexcept {
+Error Ogl33Render2D::setPropertyMesh(const RenderPropertyId& id, const MeshId& mesh_id) noexcept {
 	auto find = resources.render_properties.find(id);
 	if(find != resources.render_properties.end()){
 		find->second.mesh_id = mesh_id;
-		return Conveyor<void>{Void{}};
+		return noError();
 	}
-	return Conveyor<void>{criticalError("No Property found")};
+	return criticalError("No Property found");
 }
 
-Conveyor<void> Ogl33Render2D::setPropertyTexture(const RenderPropertyId& id, const TextureId& texture_id) noexcept {
+Error Ogl33Render2D::setPropertyTexture(const RenderPropertyId& id, const TextureId& texture_id) noexcept {
 	auto find = resources.render_properties.find(id);
 	if(find != resources.render_properties.end()){
 		find->second.texture_id = texture_id;
-		return Conveyor<void>{Void{}};
+		return noError();
 	}
-	return Conveyor<void>{criticalError("No Property found")};
+	return criticalError("No Property found");
 }
 
-Conveyor<void> Ogl33Render2D::destroyProperty(const RenderPropertyId& id) noexcept {
+Error Ogl33Render2D::destroyProperty(const RenderPropertyId& id) noexcept {
 	resources.render_properties.erase(id);
-	return Conveyor<void>{Void{}};
+	return noError();
 }
 
-Conveyor<RenderSceneId> Ogl33Render2D::createScene() noexcept {
+ErrorOr<RenderSceneId> Ogl33Render2D::createScene() noexcept {
 	RenderSceneId id = searchForFreeId(resources.scenes);
 	try{
 		resources.scenes.insert(std::make_pair(id, Ogl33Scene{}));
 	}catch(const std::bad_alloc&){
-		return Conveyor<RenderSceneId>{criticalError("Out of memory")};
+		return criticalError("Out of memory");
 	}
-	return Conveyor<RenderSceneId>{id};
+	return id;
 }
 
-Conveyor<RenderObjectId> Ogl33Render2D::createObject(const RenderSceneId& scene, const RenderPropertyId& prop) noexcept {
+ErrorOr<RenderObjectId> Ogl33Render2D::createObject(const RenderSceneId& scene, const RenderPropertyId& prop) noexcept {
 	auto find = resources.scenes.find(scene);
 	if(find != resources.scenes.end()){
 		ErrorOr<RenderObjectId> error_id = find->second.createObject(prop);
 		if(error_id.isError()){
-			return Conveyor<RenderObjectId>{error_id.error().copyError()};
+			return error_id.error().copyError();
 		}else if(error_id.isValue()){
 			return error_id.value();
 		}else {
-			return Conveyor<RenderObjectId>{criticalError("ErrorOr object isn't set properly")};
+			return criticalError("ErrorOr object isn't set properly");
 		}
 	}else{
-		return Conveyor<RenderObjectId>{criticalError("Couldn't find scene")};
+		return criticalError("Couldn't find scene");
 	}
 }
 
-Conveyor<void> Ogl33Render2D::destroyObject(const RenderSceneId& scene, const RenderObjectId& obj) noexcept {
+Error Ogl33Render2D::destroyObject(const RenderSceneId& scene, const RenderObjectId& obj) noexcept {
 	auto find = resources.scenes.find(scene);
 	if(find != resources.scenes.end()){
 		find->second.destroyObject(obj);
-		return Conveyor<void>{Void{}};
+		return noError();
 	}
-	return Conveyor<void>{criticalError("Couldn't find scene")};
+	return criticalError("Couldn't find scene");
 }
 
-Conveyor<void> Ogl33Render2D::setObjectPosition(const RenderSceneId& scene, const RenderObjectId& obj, float x, float y, bool interpolate) noexcept {
+Error Ogl33Render2D::setObjectPosition(const RenderSceneId& scene, const RenderObjectId& obj, float x, float y, bool interpolate) noexcept {
 	auto find = resources.scenes.find(scene);
 	if(find != resources.scenes.end()){
 		find->second.setObjectPosition(obj, x, y, interpolate);
-		return Conveyor<void>{Void{}};
+		return noError();
 	}
-	return Conveyor<void>{criticalError("Couldn't find scene")};
+	return criticalError("Couldn't find scene");
 }
 
-Conveyor<void> Ogl33Render2D::setObjectRotation(const RenderSceneId& scene, const RenderObjectId& obj, float angle, bool interpolate) noexcept {
+Error Ogl33Render2D::setObjectRotation(const RenderSceneId& scene, const RenderObjectId& obj, float angle, bool interpolate) noexcept {
 	auto find = resources.scenes.find(scene);
 	if(find != resources.scenes.end()){
 		find->second.setObjectRotation(obj, angle, interpolate);
-		return Conveyor<void>{Void{}};
+		return noError();
 	}
-	return Conveyor<void>{criticalError("Couldn't find scene")};
+	return criticalError("Couldn't find scene");
 }
 
-Conveyor<void> Ogl33Render2D::setObjectVisibility(const RenderSceneId& scene, const RenderObjectId& obj, bool visible) noexcept {
+Error Ogl33Render2D::setObjectVisibility(const RenderSceneId& scene, const RenderObjectId& obj, bool visible) noexcept {
 	auto find = resources.scenes.find(scene);
 	if(find != resources.scenes.end()){
 		find->second.setObjectVisibility(obj, visible);
-		return Conveyor<void>{Void{}};
+		return noError();
 	}
-	return Conveyor<void>{criticalError("Couldn't find scene")};
+	return criticalError("Couldn't find scene");
 }
 
-Conveyor<void> Ogl33Render2D::setObjectLayer(const RenderSceneId& scene, const RenderObjectId& obj, float layer) noexcept {
+Error Ogl33Render2D::setObjectLayer(const RenderSceneId& scene, const RenderObjectId& obj, float layer) noexcept {
 	auto find = resources.scenes.find(scene);
 	if(find != resources.scenes.end()){
 		find->second.setObjectLayer(obj, layer);
-		return Conveyor<void>{Void{}};
+		return noError();
 	}
-	return Conveyor<void>{criticalError("Couldn't find scene")};
+	return criticalError("Couldn't find scene");
 }
 
-Conveyor<void> Ogl33Render2D::destroyScene(const RenderSceneId& id) noexcept {
+Error Ogl33Render2D::destroyScene(const RenderSceneId& id) noexcept {
 	resources.scenes.erase(id);
-	return Conveyor<void>{Void{}};
+	return noError();
 }
 
-
-Conveyor<RenderAnimationId> Ogl33Render2D::createAnimation(const RenderAnimationData2D& data) noexcept {
-	return criticalError("TODO");
-}
-
-Conveyor<void> Ogl33Render2D::destroyAnimation(const RenderAnimationId& animation_id) noexcept {
-	return criticalError("TODO");
-}
-
-Conveyor<void> Ogl33Render2D::playAnimation(const RenderSceneId& id, const RenderObjectId& obj, const RenderAnimationId& animation_id) noexcept {
-	return criticalError("TODO");
-}
 /*
 Conveyor<Mesh3dId> Ogl33Render::createMesh3d(const Mesh3dData& data) noexcept {
 	Mesh3dId id = searchForFreeId(meshes_3d);
@@ -1446,9 +1434,9 @@ Conveyor<Mesh3dId> Ogl33Render::createMesh3d(const Mesh3dData& data) noexcept {
 	return Conveyor<Mesh3dId>{id};
 }
 
-Conveyor<void> Ogl33Render::destroyMesh3d(const Mesh3dId& id) noexcept {
+Error Ogl33Render::destroyMesh3d(const Mesh3dId& id) noexcept {
 	meshes_3d.erase(id);
-	return Conveyor<void>{Void{}};
+	return noError();
 }
 
 Conveyor<RenderProperty3dId> Ogl33Render::createProperty3d(const Mesh3dId& mesh, const TextureId& texture) noexcept {
@@ -1461,9 +1449,9 @@ Conveyor<RenderProperty3dId> Ogl33Render::createProperty3d(const Mesh3dId& mesh,
 	return Conveyor<RenderProperty3dId>{id};
 }
 
-Conveyor<void> Ogl33Render::destroyProperty3d(const RenderProperty3dId& id) noexcept {
+Error Ogl33Render::destroyProperty3d(const RenderProperty3dId& id) noexcept {
 	render_properties_3d.erase(id);
-	return Conveyor<void>{Void{}};
+	return noError();
 }
 
 Conveyor<Program3dId> Ogl33Render::createProgram3d(const std::string& vertex_src, const std::string& fragment_src) noexcept {
@@ -1491,9 +1479,9 @@ Conveyor<Program3dId> Ogl33Render::createProgram3d() noexcept {
 	return createProgram3d(default_vertex_shader_program_3d, default_fragment_shader_program_3d);
 }
 
-Conveyor<void> Ogl33Render::destroyProgram3d(const Program3dId& id) noexcept {
+Error Ogl33Render::destroyProgram3d(const Program3dId& id) noexcept {
 	programs_3d.erase(id);
-	return Conveyor<void>{Void{}};
+	return noError();
 }
 
 Conveyor<RenderScene3dId> Ogl33Render::createScene3d() noexcept {
@@ -1521,19 +1509,19 @@ Conveyor<RenderObject3dId> Ogl33Render::createObject3d(const RenderScene3dId& sc
 	return Conveyor<RenderObject3dId>{err_id.value()};
 }
 
-Conveyor<void> Ogl33Render::destroyObject3d(const RenderScene3dId& scene_id, const RenderObject3dId& obj) noexcept {
+Error Ogl33Render::destroyObject3d(const RenderScene3dId& scene_id, const RenderObject3dId& obj) noexcept {
 	auto scene = scenes_3d.find(scene_id);
 	if(scene == scenes_3d.end()){
-		return Conveyor<void>{criticalError("Couldn't find Scene")};
+		return Error{criticalError("Couldn't find Scene")};
 	}
 
 	scene->second.destroyObject(obj);
-	return Conveyor<void>{Void{}};
+	return noError();
 }
 
-Conveyor<void> Ogl33Render::destroyScene3d(const RenderScene3dId& scene) noexcept {
+Error Ogl33Render::destroyScene3d(const RenderScene3dId& scene) noexcept {
 	scenes_3d.erase(scene);
-	return Conveyor<void>{Void{}};
+	return noError();
 }
 
 Conveyor<RenderCamera3dId> Ogl33Render::createCamera3d() noexcept {
@@ -1545,22 +1533,22 @@ Conveyor<RenderCamera3dId> Ogl33Render::createCamera3d() noexcept {
 	}
 	return Conveyor<RenderCamera3dId>{id};
 }
-Conveyor<void> Ogl33Render::setCamera3dPosition(const RenderCamera3dId& id, float x, float y, float z) noexcept {
+Error Ogl33Render::setCamera3dPosition(const RenderCamera3dId& id, float x, float y, float z) noexcept {
 	auto find = cameras_3d.find(id);
 	if(find != cameras_3d.end()){
 		find->second.setViewPosition(x,y,z);
-		return Conveyor<void>{Void{}};
+		return noError();
 	}
-	return Conveyor<void>{criticalError("Couldn't find Camera")};
+	return Error{criticalError("Couldn't find Camera")};
 }
 
-Conveyor<void> Ogl33Render::setCamera3dOrthographic(const RenderCamera3dId& id, float, float, float, float, float, float)noexcept {
-	return Conveyor<void>{criticalError("Unimplemented")};
+Error Ogl33Render::setCamera3dOrthographic(const RenderCamera3dId& id, float, float, float, float, float, float)noexcept {
+	return Error{criticalError("Unimplemented")};
 }
 
-Conveyor<void> Ogl33Render::destroyCamera3d(const RenderCamera3dId& id) noexcept {
+Error Ogl33Render::destroyCamera3d(const RenderCamera3dId& id) noexcept {
 	cameras_3d.erase(id);
-	return Conveyor<void>{Void{}};
+	return noError();
 }
 
 Conveyor<RenderStage3dId> Ogl33Render::createStage3d(const RenderTargetId& target, const RenderViewportId& viewport_id, const RenderScene3dId& scene, const RenderCamera3dId& camera, const Program3dId& program) noexcept {
@@ -1582,9 +1570,9 @@ Conveyor<RenderStage3dId> Ogl33Render::createStage3d(const RenderTargetId& targe
 	return Conveyor<RenderStage3dId>{id};
 }
 
-Conveyor<void> Ogl33Render::destroyStage3d(const RenderStage3dId& id) noexcept {
+Error Ogl33Render::destroyStage3d(const RenderStage3dId& id) noexcept {
 	render_stages_3d.erase(id);
-	return Conveyor<void>{Void{}};
+	return noError();
 }
 */
 void Ogl33Render::stepRenderTargetTimes(const std::chrono::steady_clock::time_point& tp){

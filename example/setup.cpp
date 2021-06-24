@@ -70,73 +70,59 @@ int main() {
 	}
 
 	//	========================= Render Windows =============================
-	RenderWindowId win_id = 0;
-
-	render->createWindow({600, 400}, "Kelgin Setup Example")
-		.then([&render, &win_id](RenderWindowId id) {
-			render->flush();
-
-			render->setWindowVisibility(id, true)
-				.then([&render, id]() {
-					render->setWindowDesiredFPS(id, 60.f).detach();
-				})
-				.detach();
-
-			win_id = id;
-		})
-		.detach();
-
-	wait_scope.poll();
+	RenderWindowId win_id = render->createWindow({600, 400}, "Kelgin Setup Example").value();
+	render->flush();
+	render->setWindowVisibility(win_id, true);
+	render->setWindowDesiredFPS(win_id, 60.f);
 
 	//	=========================== Programs =================================
 	ProgramId program_id =
 		render_2d->createProgram(default_vertex_shader, default_fragment_shader)
-			.take()
 			.value();
 
 	//	============================ Meshes ==================================
-	MeshId mesh_id = render_2d->createMesh(default_mesh).take().value();
-	MeshId bg_mesh_id = render_2d->createMesh(bg_mesh).take().value();
+	MeshId mesh_id = render_2d->createMesh(default_mesh).value();
+	MeshId bg_mesh_id = render_2d->createMesh(bg_mesh).value();
 
 	//  =========================== Textures =================================
 	TextureId texture_id =
-		render->createTexture(loadFromFile("test.png")).take().value();
+		render->createTexture(loadFromFile("test.png")).value();
 	TextureId green_square_tex_id =
-		render->createTexture(default_image).take().value();
+		render->createTexture(default_image).value();
 	TextureId bg_tex_id =
-		render->createTexture(loadFromFile("bg.png")).take().value();
+		render->createTexture(loadFromFile("bg.png")).value();
 
 	//	============================ Scenes ==================================
-	RenderSceneId scene_id = render_2d->createScene().take().value();
+	RenderSceneId scene_id = render_2d->createScene().value();
 
 	//	===================== Render Properties ==============================
 	RenderPropertyId rp_id =
-		render_2d->createProperty(mesh_id, texture_id).take().value();
+		render_2d->createProperty(mesh_id, texture_id).value();
 	RenderPropertyId gsq_rp_id =
-		render_2d->createProperty(mesh_id, green_square_tex_id).take().value();
+		render_2d->createProperty(mesh_id, green_square_tex_id).value();
 	RenderPropertyId bg_rp_id =
-		render_2d->createProperty(bg_mesh_id, bg_tex_id).take().value();
+		render_2d->createProperty(bg_mesh_id, bg_tex_id).value();
 
 	//	======================= Render Objects ===============================
 	RenderObjectId ro_id =
-		render_2d->createObject(scene_id, gsq_rp_id).take().value();
+		render_2d->createObject(scene_id, gsq_rp_id).value();
 
 	RenderObjectId ro_spin_id =
-		render_2d->createObject(scene_id, gsq_rp_id).take().value();
+		render_2d->createObject(scene_id, gsq_rp_id).value();
 
-	render_2d->setObjectLayer(scene_id, ro_id, -0.1f).take().value();
-	render_2d->setObjectLayer(scene_id, ro_spin_id, -0.1f).take().value();
+	render_2d->setObjectLayer(scene_id, ro_id, -0.1f);
+	render_2d->setObjectLayer(scene_id, ro_spin_id, -0.1f);
 
 	std::array<std::array<RenderObjectId, 3>, 3> bg_ro_ids = {
-		render_2d->createObject(scene_id, bg_rp_id).take().value(),
-		render_2d->createObject(scene_id, bg_rp_id).take().value(),
-		render_2d->createObject(scene_id, bg_rp_id).take().value(),
-		render_2d->createObject(scene_id, bg_rp_id).take().value(),
-		render_2d->createObject(scene_id, bg_rp_id).take().value(),
-		render_2d->createObject(scene_id, bg_rp_id).take().value(),
-		render_2d->createObject(scene_id, bg_rp_id).take().value(),
-		render_2d->createObject(scene_id, bg_rp_id).take().value(),
-		render_2d->createObject(scene_id, bg_rp_id).take().value()};
+		render_2d->createObject(scene_id, bg_rp_id).value(),
+		render_2d->createObject(scene_id, bg_rp_id).value(),
+		render_2d->createObject(scene_id, bg_rp_id).value(),
+		render_2d->createObject(scene_id, bg_rp_id).value(),
+		render_2d->createObject(scene_id, bg_rp_id).value(),
+		render_2d->createObject(scene_id, bg_rp_id).value(),
+		render_2d->createObject(scene_id, bg_rp_id).value(),
+		render_2d->createObject(scene_id, bg_rp_id).value(),
+		render_2d->createObject(scene_id, bg_rp_id).value()};
 
 	for (size_t i = 0; i < 3; ++i) {
 		for (size_t j = 0; j < 3; ++j) {
@@ -147,19 +133,19 @@ int main() {
 	}
 	render_2d->setObjectPosition(scene_id, ro_spin_id, 5.f, 0.f);
 
-	RenderCameraId camera_id = render_2d->createCamera().take().value();
+	RenderCameraId camera_id = render_2d->createCamera().value();
 	float aspect = 600.f / 400.f;
 	float zoom = 10.f;
 	render_2d->setCameraOrthographic(camera_id, -2.0f * aspect * zoom,
 									 2.0f * aspect * zoom, -2.0f * zoom,
 									 2.0f * zoom);
 
-	RenderViewportId viewport_id = render->createViewport().take().value();
+	RenderViewportId viewport_id = render->createViewport().value();
 
 	RenderStageId stage_id =
 		render_2d
 			->createStage(program_id, viewport_id, win_id, scene_id, camera_id)
-			.take()
+			
 			.value();
 
 	int dx = 0;

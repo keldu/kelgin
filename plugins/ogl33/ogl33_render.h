@@ -183,14 +183,59 @@ public:
 	std::unordered_map<RenderSceneId, Ogl33Scene> scenes;
 	std::unordered_map<RenderStageId, Ogl33RenderStage> render_stages;
 
-	std::unordered_map<RenderAnimationId, RenderAnimationData2D> animation_data;
-
 	// Stages listening  to RenderTarget changes
 	std::unordered_multimap<RenderTargetId, RenderStageId> render_target_stages;
 
 public:
 	Ogl33Resources2D(Ogl33Resources& resources):res{&resources}{}
 };
+
+class Ogl33Render;
+class Ogl33Render2D final : public LowLevelRender2D {
+private:
+	Ogl33Resources2D resources;
+	Ogl33Render* render;
+
+public:
+	Ogl33Render2D(Ogl33Render& r);
+
+	Ogl33Resources2D& getResources(){
+		return resources;
+	}
+
+	// 2D
+	ErrorOr<MeshId> createMesh(const MeshData&) noexcept override;
+	Error setMeshData(const MeshId&, const MeshData&) noexcept override;
+	Error destroyMesh(const MeshId&) noexcept override;
+
+	ErrorOr<ProgramId> createProgram(const std::string& vertex_src, const std::string& fragment_src) noexcept override;
+	ErrorOr<ProgramId> createProgram() noexcept override;
+	Error destroyProgram(const ProgramId&) noexcept override;
+
+	ErrorOr<RenderCameraId> createCamera() noexcept override;
+	Error setCameraPosition(const RenderCameraId&, float x, float y) noexcept override;
+	Error setCameraRotation(const RenderCameraId&, float alpha) noexcept override;
+	Error setCameraOrthographic(const RenderCameraId&, float, float, float, float) noexcept override;
+	Error destroyCamera(const RenderCameraId&) noexcept override;
+	
+	ErrorOr<RenderStageId> createStage(const RenderTargetId& id, const RenderViewportId&, const RenderSceneId&, const RenderCameraId&, const ProgramId&) noexcept override;
+	Error destroyStage(const RenderStageId&) noexcept override;
+
+	ErrorOr<RenderPropertyId> createProperty(const MeshId&, const TextureId&) noexcept override;
+	Error setPropertyMesh(const RenderPropertyId&, const MeshId& id) noexcept override;
+	Error setPropertyTexture(const RenderPropertyId&, const TextureId& id) noexcept override;
+	Error destroyProperty(const RenderPropertyId&) noexcept override;
+
+	ErrorOr<RenderSceneId> createScene() noexcept override;
+	ErrorOr<RenderObjectId> createObject(const RenderSceneId&, const RenderPropertyId&) noexcept override;
+	Error setObjectPosition(const RenderSceneId&, const RenderObjectId&, float, float, bool interpolate = true) noexcept override;
+	Error setObjectRotation(const RenderSceneId&, const RenderObjectId&, float, bool interpolate = true) noexcept override;
+	Error setObjectVisibility(const RenderSceneId&, const RenderObjectId&, bool) noexcept override;
+	Error setObjectLayer(const RenderSceneId& id, const RenderObjectId&, float) noexcept override;
+	Error destroyObject(const RenderSceneId&, const RenderObjectId&) noexcept override;
+	Error destroyScene(const RenderSceneId&) noexcept override;
+};
+
 class Ogl33Resources3D {
 public:
 	Ogl33Resources* res;
@@ -209,56 +254,6 @@ public:
 	Ogl33Resources3D(Ogl33Resources& resources):res{&resources}{}
 };
 
-class Ogl33Render;
-class Ogl33Render2D final : public LowLevelRender2D {
-private:
-	Ogl33Resources2D resources;
-	Ogl33Render* render;
-
-public:
-	Ogl33Render2D(Ogl33Render& r);
-
-	Ogl33Resources2D& getResources(){
-		return resources;
-	}
-
-	// 2D
-	Conveyor<MeshId> createMesh(const MeshData&) noexcept override;
-	Conveyor<void> setMeshData(const MeshId&, const MeshData&) noexcept override;
-	Conveyor<void> destroyMesh(const MeshId&) noexcept override;
-
-	Conveyor<ProgramId> createProgram(const std::string& vertex_src, const std::string& fragment_src) noexcept override;
-	Conveyor<ProgramId> createProgram() noexcept override;
-	Conveyor<void> destroyProgram(const ProgramId&) noexcept override;
-
-	Conveyor<RenderCameraId> createCamera() noexcept override;
-	Conveyor<void> setCameraPosition(const RenderCameraId&, float x, float y) noexcept override;
-	Conveyor<void> setCameraRotation(const RenderCameraId&, float alpha) noexcept override;
-	Conveyor<void> setCameraOrthographic(const RenderCameraId&, float, float, float, float) noexcept override;
-	Conveyor<void> destroyCamera(const RenderCameraId&) noexcept override;
-	
-	Conveyor<RenderStageId> createStage(const RenderTargetId& id, const RenderViewportId&, const RenderSceneId&, const RenderCameraId&, const ProgramId&) noexcept override;
-	Conveyor<void> destroyStage(const RenderStageId&) noexcept override;
-
-	Conveyor<RenderPropertyId> createProperty(const MeshId&, const TextureId&) noexcept override;
-	Conveyor<void> setPropertyMesh(const RenderPropertyId&, const MeshId& id) noexcept override;
-	Conveyor<void> setPropertyTexture(const RenderPropertyId&, const TextureId& id) noexcept override;
-	Conveyor<void> destroyProperty(const RenderPropertyId&) noexcept override;
-
-	Conveyor<RenderSceneId> createScene() noexcept override;
-	Conveyor<RenderObjectId> createObject(const RenderSceneId&, const RenderPropertyId&) noexcept override;
-	Conveyor<void> setObjectPosition(const RenderSceneId&, const RenderObjectId&, float, float, bool interpolate = true) noexcept override;
-	Conveyor<void> setObjectRotation(const RenderSceneId&, const RenderObjectId&, float, bool interpolate = true) noexcept override;
-	Conveyor<void> setObjectVisibility(const RenderSceneId&, const RenderObjectId&, bool) noexcept override;
-	Conveyor<void> setObjectLayer(const RenderSceneId& id, const RenderObjectId&, float) noexcept override;
-	Conveyor<void> destroyObject(const RenderSceneId&, const RenderObjectId&) noexcept override;
-	Conveyor<void> destroyScene(const RenderSceneId&) noexcept override;
-
-	Conveyor<RenderAnimationId> createAnimation(const RenderAnimationData2D& data) noexcept override;
-	Conveyor<void> destroyAnimation(const RenderAnimationId&) noexcept override;
-	Conveyor<void> playAnimation(const RenderSceneId& id, const RenderObjectId& obj, const RenderAnimationId&) noexcept override;
-};
-
 /*
 class Ogl33Render3D final : public LowLevelRender3D {
 private:
@@ -270,29 +265,29 @@ public:
 
 
 	// 3D
-	Conveyor<Mesh3dId> createMesh3d(const Mesh3dData&) noexcept override;
-	Conveyor<void> destroyMesh3d(const Mesh3dId&) noexcept override;
+	ErrorOr<Mesh3dId> createMesh3d(const Mesh3dData&) noexcept override;
+	Error destroyMesh3d(const Mesh3dId&) noexcept override;
 
 	/// @todo layout api ideas
-	Conveyor<RenderProperty3dId> createProperty3d(const Mesh3dId&, const TextureId&) noexcept override;
-	Conveyor<void> destroyProperty3d(const RenderProperty3dId&) noexcept override;
+	ErrorOr<RenderProperty3dId> createProperty3d(const Mesh3dId&, const TextureId&) noexcept override;
+	Error destroyProperty3d(const RenderProperty3dId&) noexcept override;
 
-	Conveyor<Program3dId> createProgram3d(const std::string& vertex_src, const std::string& fragment_src) noexcept override;
-	Conveyor<Program3dId> createProgram3d() noexcept override;
-	Conveyor<void> destroyProgram3d(const Program3dId&) noexcept override;
+	ErrorOr<Program3dId> createProgram3d(const std::string& vertex_src, const std::string& fragment_src) noexcept override;
+	ErrorOr<Program3dId> createProgram3d() noexcept override;
+	Error destroyProgram3d(const Program3dId&) noexcept override;
 
-	Conveyor<RenderScene3dId> createScene3d() noexcept override;
-	Conveyor<RenderObject3dId> createObject3d(const RenderScene3dId&, const RenderProperty3dId&) noexcept override;
-	Conveyor<void> destroyObject3d(const RenderScene3dId&, const RenderObject3dId&) noexcept override;
-	Conveyor<void> destroyScene3d(const RenderScene3dId&) noexcept override;
+	ErrorOr<RenderScene3dId> createScene3d() noexcept override;
+	ErrorOr<RenderObject3dId> createObject3d(const RenderScene3dId&, const RenderProperty3dId&) noexcept override;
+	Error destroyObject3d(const RenderScene3dId&, const RenderObject3dId&) noexcept override;
+	Error destroyScene3d(const RenderScene3dId&) noexcept override;
 
-	Conveyor<RenderCamera3dId> createCamera3d() noexcept override;
-	Conveyor<void> setCamera3dPosition(const RenderCamera3dId&, float, float, float) noexcept override;
-	Conveyor<void> setCamera3dOrthographic(const RenderCamera3dId&, float, float, float, float, float, float) noexcept override;
-	Conveyor<void> destroyCamera3d(const RenderCamera3dId&) noexcept override;
+	ErrorOr<RenderCamera3dId> createCamera3d() noexcept override;
+	Error setCamera3dPosition(const RenderCamera3dId&, float, float, float) noexcept override;
+	Error setCamera3dOrthographic(const RenderCamera3dId&, float, float, float, float, float, float) noexcept override;
+	Error destroyCamera3d(const RenderCamera3dId&) noexcept override;
 
-	Conveyor<RenderStage3dId> createStage3d(const RenderTargetId&, const RenderViewportId&, const RenderScene3dId&, const RenderCamera3dId&, const Program3dId&) noexcept override;
-	Conveyor<void> destroyStage3d(const RenderStage3dId&) noexcept override;
+	ErrorOr<RenderStage3dId> createStage3d(const RenderTargetId&, const RenderViewportId&, const RenderScene3dId&, const RenderCamera3dId&, const Program3dId&) noexcept override;
+	Error destroyStage3d(const RenderStage3dId&) noexcept override;
 };
 */
 
@@ -337,19 +332,19 @@ public:
 	LowLevelRender2D* interface2D() noexcept override {return &render_2d;}
 	LowLevelRender3D* interface3D() noexcept override {return nullptr;}
 
-	Conveyor<TextureId> createTexture(const Image&) noexcept override;
-	Conveyor<void> destroyTexture(const TextureId&) noexcept override;
+	ErrorOr<TextureId> createTexture(const Image&) noexcept override;
+	Error destroyTexture(const TextureId&) noexcept override;
 
-	Conveyor<RenderWindowId> createWindow(const RenderVideoMode&, const std::string& title) noexcept override;
-	Conveyor<void> setWindowDesiredFPS(const RenderWindowId&, float fps) noexcept override;
-	Conveyor<void> setWindowVisibility(const RenderWindowId& id, bool show) noexcept override;
-	Conveyor<void> destroyWindow(const RenderWindowId& id) noexcept override;
+	ErrorOr<RenderWindowId> createWindow(const RenderVideoMode&, const std::string& title) noexcept override;
+	Error setWindowDesiredFPS(const RenderWindowId&, float fps) noexcept override;
+	Error setWindowVisibility(const RenderWindowId& id, bool show) noexcept override;
+	Error destroyWindow(const RenderWindowId& id) noexcept override;
 
 	Conveyor<RenderEvent::Events> listenToWindowEvents(const RenderWindowId&) noexcept override;
 
-	Conveyor<RenderViewportId> createViewport() noexcept override;
-	Conveyor<void> setViewportRect(const RenderViewportId&, float, float, float, float) noexcept override;
-	Conveyor<void> destroyViewport(const RenderViewportId&) noexcept override;
+	ErrorOr<RenderViewportId> createViewport() noexcept override;
+	Error setViewportRect(const RenderViewportId&, float, float, float, float) noexcept override;
+	Error destroyViewport(const RenderViewportId&) noexcept override;
 
 
 	void step(const std::chrono::steady_clock::time_point&) noexcept override;
