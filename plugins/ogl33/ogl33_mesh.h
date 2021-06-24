@@ -13,7 +13,7 @@ private:
 	
 public:
 	Ogl33Mesh();
-	Ogl33Mesh(GLuint vao, std::array<GLuint,2>&&, size_t ind);
+	Ogl33Mesh(GLuint vao, std::array<GLuint,2>&& id, size_t ind);
 	~Ogl33Mesh();
 	Ogl33Mesh(Ogl33Mesh&&);
 
@@ -35,7 +35,7 @@ private:
 
 public:
 	Ogl33Mesh3d();
-	Ogl33Mesh3d(GLuint, std::array<GLuint, 2>&&, size_t);
+	Ogl33Mesh3d(GLuint v, std::array<GLuint, 2>&& id, size_t ind);
 	~Ogl33Mesh3d();
 	Ogl33Mesh3d(Ogl33Mesh3d&&);
 

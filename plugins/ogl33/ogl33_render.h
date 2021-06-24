@@ -22,116 +22,16 @@
 #include "common/shapes.h"
 
 #include "ogl33_mesh.h"
+#include "ogl33_texture.h"
+#include "ogl33_program.h"
+#include "ogl33_scene.h"
+#include "ogl33_camera.h"
 
 namespace gin {
 class Ogl33Render;
 class Ogl33RenderProperty;
 class Ogl33RenderObject;
 
-class Ogl33Camera {
-private:
-	Matrix<float, 3, 3> projection_matrix;
-
-	std::array<float, 2> position = {{0.f, 0.f}};
-	std::complex<float> angle = std::polar(1.f, 0.f);
-
-	std::array<float, 2> old_position = {{0.f, 0.f}};
-	std::complex<float> old_angle = std::polar(1.f, 0.f);
-public:
-	Ogl33Camera();
-
-	void setViewPosition(float x, float y);
-	void setViewRotation(float angle);
-
-	void updateState(float relative_tp);
-
-	void setOrtho(float left, float right, float top, float bot);
-
-	Matrix<float, 3,3> view(float relative_tp) const;
-	const Matrix<float, 3,3>& projection() const;
-};
-
-class Ogl33Viewport {
-private:
-	float x;
-	float y;
-	float width;
-	float height;
-public:
-	Ogl33Viewport(float x, float y,float w, float h);
-
-	void use();
-};
-
-class Ogl33Camera3d {
-private:
-	Matrix<float, 4, 4> projection_matrix;
-	Matrix<float, 4, 4> view_matrix;
-public:
-	Ogl33Camera3d();
-
-	void setOrtho(float left, float right, float top, float bottom, float near, float far);
-	void setViewPosition(float x, float y, float z);
-	void setViewRotation(float alpha, float beta, float gamma);
-
-	const Matrix<float, 4, 4>& projection() const;
-	const Matrix<float, 4, 4>& view() const;
-};
-
-class Ogl33Texture {
-private:
-	GLuint tex_id;
-
-	std::vector<Rectangle<float>> sub_textures;
-public:
-	Ogl33Texture();
-	Ogl33Texture(GLuint tex_id);
-	~Ogl33Texture();
-	Ogl33Texture(Ogl33Texture&&);
-
-	void bind() const;
-};
-
-class Ogl33Program3d {
-private:
-	GLuint program_id;
-
-	GLuint texture_uniform;
-	GLuint mvp_uniform;
-public:
-	Ogl33Program3d();
-	Ogl33Program3d(GLuint program, GLuint texture, GLuint mvp);
-	~Ogl33Program3d();
-
-	void setTexture(const Ogl33Texture& texture_id);
-	void setMvp(const Matrix<float, 4, 4>& mvp);
-	void setMesh(const Ogl33Mesh3d& mesh_id);
-
-	void use();
-};
-
-class Ogl33Program {
-private:
-	GLuint program_id;
-
-	GLuint texture_uniform;
-	GLuint mvp_uniform;
-	GLuint layer_uniform;
-public:
-	Ogl33Program();
-	Ogl33Program(GLuint, GLuint, GLuint, GLuint);
-	~Ogl33Program();
-
-	Ogl33Program(Ogl33Program&&);
-
-	void setTexture(const Ogl33Texture&);
-	void setMvp(const Matrix<float,3,3>&);
-	void setMesh(const Ogl33Mesh&);
-	void setLayer(float);
-	void setLayer(int16_t);
-
-	void use();
-};
 
 class Ogl33RenderTarget {
 protected:
@@ -228,67 +128,6 @@ public:
 	TextureId texture_id;
 };
 
-class Ogl33Scene {
-public:
-	struct RenderObject {
-		RenderPropertyId id = 0;
-
-		std::array<float,2> pos{{0.f, 0.f}};
-		std::complex<float> angle = std::polar(1.f, 0.f);
-
-		std::array<float,2> old_pos{{0.f, 0.f}};
-		std::complex<float> old_angle = std::polar(1.f, 0.f);
-
-		float layer = 0.f;
-		bool visible = true;
-	};
-private:
-	std::unordered_map<RenderObjectId, RenderObject> objects;
-public:
-
-	ErrorOr<RenderObjectId> createObject(const RenderPropertyId& id) noexcept;
-	void destroyObject(const RenderObjectId& id) noexcept;
-	Error setObjectPosition(const RenderObjectId& id, float x, float y, bool interpolate) noexcept;
-	Error setObjectRotation(const RenderObjectId& id, float a, bool interpolate) noexcept;
-	Error setObjectVisibility(const RenderObjectId& id, bool v) noexcept;
-	Error setObjectLayer(const RenderObjectId& id, float l) noexcept;
-
-	void visit(const Ogl33Camera&, std::vector<RenderObject*>&);
-
-	void updateState(float interval);
-};
-
-class Ogl33Scene3d {
-public:
-	struct RenderObject {
-		RenderProperty3dId id = 0;
-
-		std::array<float, 3> pos{{0.f, 0.f, 0.f}};
-		std::array<float, 3> rot{{0.f, 0.f, 0.f}};
-
-		std::array<float, 3> old_pos{{0.f, 0.f, 0.f}};
-		std::array<float, 3> old_rot{{0.f, 0.f, 0.f}};
-
-		bool visible = true;
-
-		RenderObject(const RenderProperty3dId& p_id):id{p_id}{}
-	};
-private:
-	std::unordered_map<RenderObject3dId, RenderObject> objects;
-public:
-
-	ErrorOr<RenderObject3dId> createObject(const RenderProperty3dId&) noexcept;
-	void destroyObject(const RenderObject3dId&) noexcept;
-
-	Error setObjectPosition(const RenderObject3dId&, float, float, float) noexcept;
-	Error setObjectRotation(const RenderObject3dId&, float, float, float) noexcept;
-	Error setObjectVisibility(const RenderObject3dId&, bool) noexcept;
-
-	void visit(const Ogl33Camera3d&, std::vector<RenderObject>&);
-
-	void updateState();
-};
-
 class Ogl33RenderStage {
 private:
 	void renderOne(Ogl33Program& program, Ogl33RenderProperty& property, Ogl33Scene::RenderObject& object, Ogl33Mesh& mesh, Ogl33Texture&, Matrix<float, 3, 3>& vp, float time_interval);
@@ -315,16 +154,32 @@ public:
 	void render(Ogl33Render& render);
 };
 
-class Ogl33Render final : public LowLevelRender, public LowLevelRender2D, public LowLevelRender3D {
-private:
-	Own<GlContext> context;
-
+class Ogl33Resources {
+public:
+	// Render Targets
 	Ogl33RenderTargetStorage render_targets;
-	bool loaded_glad = false;
-
 	// General Resource Storage
 	std::unordered_map<TextureId, Ogl33Texture> textures;
 	std::unordered_map<RenderViewportId, Ogl33Viewport> viewports;
+
+	// Stages listening  to RenderTarget changes
+	std::unordered_multimap<RenderTargetId, RenderStageId> render_target_stages;
+
+	// Stages listening  to RenderTarget changes
+	std::unordered_multimap<RenderTargetId, RenderStage3dId> render_target_stages_3d;
+
+	struct RenderTargetUpdate {
+		std::chrono::steady_clock::duration seconds_per_frame;
+		std::chrono::steady_clock::time_point next_update;
+	};
+	std::unordered_map<RenderTargetId, RenderTargetUpdate> render_target_times;	
+
+	std::queue<RenderTargetId> render_target_draw_tasks;
+};
+
+class Ogl33Resources2D {
+public:
+	Ogl33Resources* res;
 
 	// 2D Resource Storage
 	std::unordered_map<MeshId, Ogl33Mesh> meshes;
@@ -336,8 +191,12 @@ private:
 
 	std::unordered_map<RenderAnimationId, RenderAnimationData2D> animation_data;
 
-	// Stages listening  to RenderTarget changes
-	std::unordered_multimap<RenderTargetId, RenderStageId> render_target_stages;
+public:
+	Ogl33Resources2D(Ogl33Resources& resources):res{&resources}{}
+};
+class Ogl33Resources3D {
+public:
+	Ogl33Resources* res;
 
 	// 3D Resource Storage
 	std::unordered_map<Mesh3dId, Ogl33Mesh3d> meshes_3d;
@@ -346,19 +205,22 @@ private:
 	std::unordered_map<RenderProperty3dId, Ogl33RenderProperty3d> render_properties_3d;
 	std::unordered_map<RenderScene3dId, Ogl33Scene3d> scenes_3d;
 	std::unordered_map<RenderStage3dId, Ogl33RenderStage3d> render_stages_3d;
+public:
+	Ogl33Resources3D(Ogl33Resources& resources):res{&resources}{}
+};
 
-	// Stages listening  to RenderTarget changes
-	std::unordered_multimap<RenderTargetId, RenderStage3dId> render_target_stages_3d;
+class Ogl33Render final : public LowLevelRender, public LowLevelRender2D, public LowLevelRender3D {
+private:
+	Own<GlContext> context;
 
-	struct RenderTargetUpdate {
-		std::chrono::steady_clock::duration seconds_per_frame;
-		std::chrono::steady_clock::time_point next_update;
-	};
-	std::unordered_map<RenderTargetId, RenderTargetUpdate> render_target_times;	
+	bool loaded_glad = false;
+
+	Ogl33Resources resources;
+
+	Ogl33Resources2D resources_2d;
+	Ogl33Resources2D resources_3d;
 
 	void stepRenderTargetTimes(const std::chrono::steady_clock::time_point&);
-
-	std::queue<RenderTargetId> render_target_draw_tasks;
 
 	std::chrono::steady_clock::time_point old_time_point;
 	std::chrono::steady_clock::time_point time_point;
