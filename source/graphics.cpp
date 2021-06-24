@@ -9,8 +9,7 @@
 
 namespace gin {
 RenderPlugins::Plugin::Plugin(
-	DynamicLibrary &&dl,
-	std::function<LowLevelRender *(IoProvider &)> &&cr,
+	DynamicLibrary &&dl, std::function<LowLevelRender *(IoProvider &)> &&cr,
 	std::function<void(LowLevelRender *)> &&dr)
 	: handle{std::move(dl)}, create_render{std::move(cr)}, destroy_render{
 															   std::move(dr)} {}

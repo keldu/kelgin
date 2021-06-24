@@ -106,8 +106,7 @@ public:
 	 * @param name search for the plugin by using the filename part without the
 	 * extension
 	 */
-	LowLevelRender *getRenderer(IoProvider &provider,
-								const std::string &name);
+	LowLevelRender *getRenderer(IoProvider &provider, const std::string &name);
 };
 
 class GraphicsService final : public Service {

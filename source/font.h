@@ -38,7 +38,7 @@ public:
 	};
 
 private:
-	//std::map<uint32_t, Page> pages;
+	// std::map<uint32_t, Page> pages;
 
 protected:
 public:

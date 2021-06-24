@@ -29,7 +29,7 @@ public:
 
 		if (!symbol) {
 #ifndef NDEBUG
-			std::cerr<<dlerror()<<std::endl;
+			std::cerr << dlerror() << std::endl;
 #endif
 			return nullptr;
 		}
@@ -65,7 +65,7 @@ ErrorOr<DynamicLibrary> loadDynamicLibrary(const std::filesystem::path &path) {
 	void *handle = dlopen(path.c_str(), RTLD_LAZY);
 	if (!handle) {
 #ifndef NDEBUG
-		std::cerr<<dlerror()<<std::endl;
+		std::cerr << dlerror() << std::endl;
 #endif
 		return criticalError("Couldn't open library");
 	}

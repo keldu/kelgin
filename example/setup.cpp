@@ -70,7 +70,8 @@ int main() {
 	}
 
 	//	========================= Render Windows =============================
-	RenderWindowId win_id = render->createWindow({600, 400}, "Kelgin Setup Example").value();
+	RenderWindowId win_id =
+		render->createWindow({600, 400}, "Kelgin Setup Example").value();
 	render->flush();
 	render->setWindowVisibility(win_id, true);
 	render->setWindowDesiredFPS(win_id, 60.f);
@@ -89,8 +90,7 @@ int main() {
 		render->createTexture(loadFromFile("test.png")).value();
 	TextureId green_square_tex_id =
 		render->createTexture(default_image).value();
-	TextureId bg_tex_id =
-		render->createTexture(loadFromFile("bg.png")).value();
+	TextureId bg_tex_id = render->createTexture(loadFromFile("bg.png")).value();
 
 	//	============================ Scenes ==================================
 	RenderSceneId scene_id = render_2d->createScene().value();
@@ -104,8 +104,7 @@ int main() {
 		render_2d->createProperty(bg_mesh_id, bg_tex_id).value();
 
 	//	======================= Render Objects ===============================
-	RenderObjectId ro_id =
-		render_2d->createObject(scene_id, gsq_rp_id).value();
+	RenderObjectId ro_id = render_2d->createObject(scene_id, gsq_rp_id).value();
 
 	RenderObjectId ro_spin_id =
 		render_2d->createObject(scene_id, gsq_rp_id).value();
@@ -145,7 +144,6 @@ int main() {
 	RenderStageId stage_id =
 		render_2d
 			->createStage(program_id, viewport_id, win_id, scene_id, camera_id)
-			
 			.value();
 
 	int dx = 0;
@@ -286,7 +284,9 @@ int main() {
 		render->flush();
 		wait_scope.wait(std::chrono::milliseconds{1});
 
-		fps = fps * kalman + (1.f-kalman) / std::chrono::duration<float>{time-old_time}.count();
+		fps = fps * kalman +
+			  (1.f - kalman) /
+				  std::chrono::duration<float>{time - old_time}.count();
 
 		// std::cout<<"FPS: "<<fps<<std::endl;
 
