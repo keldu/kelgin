@@ -515,6 +515,16 @@ Error Ogl33Scene::setObjectLayer(const RenderObjectId& id, float l) noexcept {
 	return noError();
 }
 
+Error Ogl33Scene::setObjectProperty(const RenderObjectId& id, const RenderPropertyId& property) noexcept {
+	auto find = objects.find(id);
+	if(find == objects.end()){
+		return criticalError("Couldn't find object");
+	}
+
+	find->second.id = property;
+	return noError();
+}
+
 /**
 * @todo design better interface and check occlusion
 */
@@ -1349,6 +1359,16 @@ Error Ogl33Render2D::destroyObject(const RenderSceneId& scene, const RenderObjec
 		find->second.destroyObject(obj);
 		return noError();
 	}
+	return criticalError("Couldn't find scene");
+}
+
+Error Ogl33Render2D::setObjectProperty(const RenderSceneId& scene, const RenderObjectId& obj, const RenderPropertyId& property) noexcept {
+	auto find = resources.scenes.find(scene);
+	if(find != resources.scenes.end()){
+		find->second.setObjectProperty(obj, property);
+		return noError();
+	}
+
 	return criticalError("Couldn't find scene");
 }
 

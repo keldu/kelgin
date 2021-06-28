@@ -232,6 +232,7 @@ public:
 	Error setObjectRotation(const RenderSceneId&, const RenderObjectId&, float, bool interpolate = true) noexcept override;
 	Error setObjectVisibility(const RenderSceneId&, const RenderObjectId&, bool) noexcept override;
 	Error setObjectLayer(const RenderSceneId& id, const RenderObjectId&, float) noexcept override;
+	Error setObjectProperty(const RenderSceneId& id, const RenderObjectId&, const RenderPropertyId&) noexcept override;
 	Error destroyObject(const RenderSceneId&, const RenderObjectId&) noexcept override;
 	Error destroyScene(const RenderSceneId&) noexcept override;
 };

@@ -33,6 +33,7 @@ public:
 	Error setObjectRotation(const RenderObjectId& id, float a, bool interpolate) noexcept;
 	Error setObjectVisibility(const RenderObjectId& id, bool v) noexcept;
 	Error setObjectLayer(const RenderObjectId& id, float l) noexcept;
+	Error setObjectProperty(const RenderObjectId& id, const RenderPropertyId& property) noexcept;
 
 	void visit(const Ogl33Camera&, std::vector<RenderObject*>&);
 

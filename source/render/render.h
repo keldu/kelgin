@@ -137,6 +137,7 @@ public:
 	virtual Error setObjectRotation(const RenderSceneId&, const RenderObjectId&, float, bool interpolate = true) noexcept = 0;
 	virtual Error setObjectVisibility(const RenderSceneId&, const RenderObjectId&, bool) noexcept = 0;
 	virtual Error setObjectLayer(const RenderSceneId& id, const RenderObjectId&, float) noexcept = 0;
+	virtual Error setObjectProperty(const RenderSceneId& id, const RenderObjectId&, const RenderPropertyId&) noexcept = 0;
 	virtual Error destroyScene(const RenderSceneId&) noexcept = 0;
 
 	// Stage Operations
